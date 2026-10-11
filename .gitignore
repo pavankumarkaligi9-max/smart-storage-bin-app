@@ -1,0 +1,41 @@
+# OS generated files
+.DS_Store
+Thumbs.db
+*.swp
+*.bak
+
+# Build directories & caches
+.gradle/
+build/
+target/
+bin/
+out/
+*.class
+*.jar
+*.war
+*.ear
+*.apk
+*.aab
+
+# IDE & Editor files
+.idea/
+*.iml
+.vscode/
+*.ipr
+*.iws
+.project
+.classpath
+.settings/
+
+# Python & Node caches
+__pycache__/
+*.py[cod]
+node_modules/
+.npm/
+
+# Log files & scratch files
+*.log
+test_cat_filters.html
+test_clicks_all.html
+test_eval.html
+run_filter_test.py

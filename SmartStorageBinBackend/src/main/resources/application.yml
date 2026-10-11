@@ -1,0 +1,29 @@
+server:
+  port: 8080
+
+spring:
+  datasource:
+    url: jdbc:mysql://localhost:3306/smart_file_manager?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+    username: root
+    password: ${DB_PASSWORD:}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+        format_sql: true
+
+app:
+  expiry:
+    warning-days: 3
+  temporary:
+    default-days: 7
+  storage:
+    total-bytes: 137438953472 # 128 GB
+    warning-threshold-percent: 80
+  bin:
+    retention-days: 30
+  cors:
+    allowed-origins: "*"

@@ -1,0 +1,19 @@
+{
+  "name": "smart-storage-bin-web",
+  "version": "1.0.0",
+  "description": "Smart Storage Bin - Mobile Lifecycle File Management Interactive Web Simulation",
+  "main": "index.html",
+  "scripts": {
+    "start": "python -m http.server 8085",
+    "serve": "npx serve ."
+  },
+  "keywords": [
+    "file-manager",
+    "storage-optimizer",
+    "sha256-deduplication",
+    "android-lifecycle",
+    "spring-boot"
+  ],
+  "author": "Pavan Kumar",
+  "license": "MIT"
+}

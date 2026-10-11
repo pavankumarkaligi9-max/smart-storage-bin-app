@@ -1,0 +1,2036 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <title>Smart Storage Bin - Web App</title>
+  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 9999px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: transparent;
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 font-sans h-screen flex overflow-hidden antialiased">
+
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container" class="fixed top-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+  <!-- ================= SIDEBAR NAVIGATION ================= -->
+  <aside class="w-64 bg-slate-900 border-r border-slate-800 flex flex-col justify-between flex-shrink-0 z-20">
+    <div>
+      <!-- App Brand / Logo -->
+      <div class="h-16 px-6 flex items-center gap-3 border-b border-slate-800/80">
+        <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center text-white text-lg shadow-lg shadow-blue-500/20">
+          <i class="fa-solid fa-box-archive"></i>
+        </div>
+        <div>
+          <h1 class="font-bold text-sm tracking-tight text-white flex items-center gap-1.5">
+            Smart Storage <span class="text-blue-400">Bin</span>
+          </h1>
+          <span class="text-[10px] text-slate-400 font-medium">Lifecycle File Manager</span>
+        </div>
+      </div>
+
+      <!-- System Status Widget -->
+      <div class="px-3.5 py-3 mx-3 my-3 rounded-2xl bg-slate-950/60 border border-slate-800 text-xs">
+        <div class="flex items-center gap-2 text-emerald-400 font-semibold text-[11px] mb-1">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span>Zero Auto-Deletion Active</span>
+        </div>
+        <p class="text-[10px] text-slate-400 leading-tight">Automated storage lifecycle tracking and expiry alerts are active.</p>
+      </div>
+
+      <!-- Navigation Links -->
+      <nav class="px-3 space-y-1">
+        <button onclick="navigate('dashboard')" id="nav-dashboard" class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition bg-blue-600/10 text-blue-400 border border-blue-500/20 cursor-pointer">
+          <i class="fa-solid fa-gauge-high w-4 text-center"></i>
+          <span>Dashboard</span>
+        </button>
+
+        <button onclick="navigate('files')" id="nav-files" class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 cursor-pointer">
+          <i class="fa-solid fa-folder-open w-4 text-center"></i>
+          <span>All Files</span>
+          <span id="badge-all-files" class="ml-auto text-[10px] px-2 py-0.5 rounded-full bg-slate-800 text-slate-300">7</span>
+        </button>
+
+        <button onclick="navigate('temporary')" id="nav-temporary" class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 cursor-pointer">
+          <i class="fa-solid fa-clock-rotate-left w-4 text-center text-amber-400"></i>
+          <span>Temporary Bin</span>
+          <span id="badge-temp-files" class="ml-auto text-[10px] px-2 py-0.5 rounded-full bg-amber-950 text-amber-300 border border-amber-800/50">4</span>
+        </button>
+
+        <button onclick="navigate('storage')" id="nav-storage" class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 cursor-pointer">
+          <i class="fa-solid fa-chart-pie w-4 text-center text-emerald-400"></i>
+          <span>Storage Analyzer</span>
+        </button>
+
+        <button onclick="navigate('duplicates')" id="nav-duplicates" class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 cursor-pointer">
+          <i class="fa-solid fa-clone w-4 text-center text-purple-400"></i>
+          <span>Duplicate Finder</span>
+          <span id="badge-dup-files" class="ml-auto text-[10px] px-2 py-0.5 rounded-full bg-purple-950 text-purple-300 border border-purple-800/50">1</span>
+        </button>
+
+        <button onclick="navigate('bin')" id="nav-bin" class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 cursor-pointer">
+          <i class="fa-solid fa-trash-can w-4 text-center text-rose-400"></i>
+          <span>Recycle Bin</span>
+          <span id="badge-bin-files" class="ml-auto text-[10px] px-2 py-0.5 rounded-full bg-rose-950 text-rose-300 border border-rose-800/50">1</span>
+        </button>
+      </nav>
+
+      <!-- Section: System & Dev Tools -->
+      <div class="px-3 mt-6">
+        <div class="px-3 text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-2">Dev & Architecture</div>
+        <div class="space-y-1">
+          <button onclick="navigate('code')" id="nav-code" class="w-full flex items-center gap-3 px-3.5 py-2 rounded-xl text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition cursor-pointer">
+            <i class="fa-solid fa-code w-4 text-center"></i>
+            <span>Code Browser</span>
+          </button>
+          <button onclick="navigate('api')" id="nav-api" class="w-full flex items-center gap-3 px-3.5 py-2 rounded-xl text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition cursor-pointer">
+            <i class="fa-solid fa-bolt w-4 text-center text-amber-400"></i>
+            <span>REST API Console</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Storage Widget (Sidebar Footer) -->
+    <div class="p-4 border-t border-slate-800 bg-slate-950/40">
+      <div class="flex justify-between items-center text-xs mb-1.5">
+        <span class="text-slate-400 font-medium">Storage Capacity</span>
+        <span id="sidebar-storage-text" class="font-bold text-white text-[11px]">96.0 GB / 128.0 GB</span>
+      </div>
+      <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden mb-2">
+        <div id="sidebar-storage-bar" class="bg-gradient-to-r from-blue-500 via-indigo-500 to-teal-400 h-full w-3/4 rounded-full transition-all duration-500"></div>
+      </div>
+      <div class="flex justify-between text-[10px] text-slate-400">
+        <span id="sidebar-storage-percent">75% used</span>
+        <span id="sidebar-storage-free" class="text-emerald-400 font-medium">32.0 GB free</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ================= MAIN CONTENT AREA ================= -->
+  <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
+    
+    <!-- Top Header Bar -->
+    <header class="h-16 bg-slate-900/80 backdrop-blur border-b border-slate-800 px-6 flex items-center justify-between gap-4 flex-shrink-0">
+      <!-- Search Input -->
+      <div class="relative max-w-md w-full">
+        <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+        <input 
+          type="text" 
+          id="global-search" 
+          oninput="handleSearch(this.value)" 
+          placeholder="Search files by name, type, or SHA-256 hash..." 
+          class="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-4 py-2 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-blue-500 transition"
+        >
+      </div>
+
+      <!-- Header Actions -->
+      <div class="flex items-center gap-2">
+        
+        <!-- Test Expiry Notification Trigger -->
+        <button id="btn-header-test-expiry" onclick="simulateTemporaryExpiry()" class="px-3 py-1.5 bg-rose-950/70 hover:bg-rose-900/80 active:scale-95 text-rose-300 border border-rose-700/60 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer shadow-sm flex-shrink-0" title="Simulate temporary file time completion & trigger notification">
+          <i class="fa-solid fa-bell text-rose-400"></i>
+          <span>Test Expiry Alert</span>
+        </button>
+
+        <!-- Dynamic Expiry Warning Trigger -->
+        <button id="btn-header-expired" onclick="triggerExpireWarning()" class="px-3 py-1.5 bg-amber-950/70 hover:bg-amber-900/80 active:scale-95 text-amber-300 border border-amber-700/60 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer flex-shrink-0" title="Review expired temporary files">
+          <i class="fa-solid fa-triangle-exclamation text-amber-400"></i>
+          <span id="header-expired-text">1 File Expired</span>
+        </button>
+
+        <!-- Dynamic Duplicate Trigger -->
+        <button id="btn-header-dup" onclick="showDuplicateModal()" class="px-3 py-1.5 bg-purple-950/70 hover:bg-purple-900/80 active:scale-95 text-purple-300 border border-purple-700/60 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer flex-shrink-0" title="Review duplicate files">
+          <i class="fa-solid fa-clone text-purple-400"></i>
+          <span id="header-dup-text">Duplicates Found</span>
+        </button>
+
+        <!-- Notification Bell -->
+        <div class="relative flex-shrink-0">
+          <button id="btn-header-bell" onclick="toggleNotifications(event)" class="w-9 h-9 rounded-xl bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-300 flex items-center justify-center text-sm transition relative cursor-pointer" title="System Notifications">
+            <i class="fa-regular fa-bell"></i>
+            <span id="bell-dot-ping" class="w-2 h-2 rounded-full bg-amber-400 absolute top-2 right-2 animate-ping"></span>
+            <span id="bell-dot" class="w-2 h-2 rounded-full bg-amber-400 absolute top-2 right-2"></span>
+          </button>
+
+          <!-- Notifications Popover -->
+          <div id="notifications-popover" class="hidden absolute right-0 mt-2 w-80 bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-4 z-50 text-xs space-y-3">
+            <div class="flex justify-between items-center pb-2 border-b border-slate-800 font-bold">
+              <span>System Notifications</span>
+              <span onclick="clearNotifications()" class="text-[10px] text-blue-400 font-normal cursor-pointer hover:underline">Mark all read</span>
+            </div>
+            <div class="space-y-2" id="notifications-list">
+              <!-- Injected by JS -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Content Body Viewports (Scrollable) -->
+    <main class="flex-1 overflow-y-auto custom-scrollbar p-8 bg-slate-950">
+      
+      <!-- ================= 1. DASHBOARD VIEW ================= -->
+      <section id="view-dashboard" class="space-y-8 max-w-7xl mx-auto">
+
+        <!-- System Architecture & Policy Overview Banner -->
+        <div class="bg-gradient-to-r from-blue-950/60 via-slate-900 to-indigo-950/60 border border-blue-800/40 rounded-3xl p-6 shadow-xl flex flex-col md:flex-row items-center justify-between gap-6">
+          <div class="flex items-center gap-5">
+            <div class="w-14 h-14 rounded-2xl bg-blue-600/20 border border-blue-500/30 text-blue-400 flex items-center justify-center text-2xl shadow-inner flex-shrink-0">
+              <i class="fa-solid fa-hard-drive"></i>
+            </div>
+            <div>
+              <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                Storage Automation Engine Active
+                <span class="px-2 py-0.5 rounded-full bg-emerald-950/80 text-emerald-300 text-[10px] font-semibold border border-emerald-700/50">Zero Auto-Deletion</span>
+              </h2>
+              <p class="text-xs text-slate-400 mt-1">Files are tracked by category and retention lifespan. Click any file to open, inspect, or manage its retention.</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-2.5 flex-shrink-0">
+            <button onclick="navigate('temporary')" class="px-4 py-2.5 bg-blue-600 hover:bg-blue-500 active:scale-95 text-white rounded-xl text-xs font-bold shadow-lg shadow-blue-600/30 transition cursor-pointer flex items-center gap-1.5">
+              <i class="fa-solid fa-clock-rotate-left"></i>
+              <span>View Temporary Bin</span>
+            </button>
+            <button onclick="navigate('duplicates')" class="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-200 border border-slate-700 rounded-xl text-xs font-semibold transition cursor-pointer flex items-center gap-1.5">
+              <i class="fa-solid fa-clone text-purple-400"></i>
+              <span>Check Duplicates</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Top Banner / Stat Metrics -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+          <!-- Stat 1: Total Files -->
+          <div class="bg-slate-900 border border-slate-800/80 p-5 rounded-2xl shadow-sm flex items-center justify-between">
+            <div>
+              <div class="text-xs text-slate-400 font-medium">Total Files Managed</div>
+              <div class="text-2xl font-bold text-white mt-1" id="stat-total-files">7</div>
+              <div class="text-[11px] text-slate-500 mt-1">Across 7 standard categories</div>
+            </div>
+            <div class="w-12 h-12 rounded-xl bg-blue-900/30 border border-blue-700/40 text-blue-400 flex items-center justify-center text-xl">
+              <i class="fa-solid fa-folder-tree"></i>
+            </div>
+          </div>
+
+          <!-- Stat 2: Temporary Files -->
+          <div class="bg-slate-900 border border-slate-800/80 p-5 rounded-2xl shadow-sm flex items-center justify-between">
+            <div>
+              <div class="text-xs text-slate-400 font-medium">Active Temporary Files</div>
+              <div class="text-2xl font-bold text-amber-300 mt-1" id="stat-temp-files">4</div>
+              <div class="text-[11px] text-amber-400/80 mt-1">Auto-tracked lifecycles</div>
+            </div>
+            <div class="w-12 h-12 rounded-xl bg-amber-900/30 border border-amber-700/40 text-amber-400 flex items-center justify-center text-xl">
+              <i class="fa-solid fa-clock-rotate-left"></i>
+            </div>
+          </div>
+
+          <!-- Stat 3: Expired Files -->
+          <div class="bg-slate-900 border border-slate-800/80 p-5 rounded-2xl shadow-sm flex items-center justify-between">
+            <div>
+              <div class="text-xs text-slate-400 font-medium">Expired (Awaiting Action)</div>
+              <div class="text-2xl font-bold text-rose-400 mt-1" id="stat-expired-files">1</div>
+              <div class="text-[11px] text-rose-400/80 mt-1">Zero auto-deletion rule</div>
+            </div>
+            <div class="w-12 h-12 rounded-xl bg-rose-900/30 border border-rose-700/40 text-rose-400 flex items-center justify-center text-xl">
+              <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+          </div>
+
+          <!-- Stat 4: Wasted Duplicate Space -->
+          <div class="bg-slate-900 border border-slate-800/80 p-5 rounded-2xl shadow-sm flex items-center justify-between">
+            <div>
+              <div class="text-xs text-slate-400 font-medium">Duplicate Wasted Space</div>
+              <div class="text-2xl font-bold text-purple-400 mt-1" id="stat-dup-space">150 MB</div>
+              <div class="text-[11px] text-purple-400/80 mt-1">SHA-256 identified</div>
+            </div>
+            <div class="w-12 h-12 rounded-xl bg-purple-900/30 border border-purple-700/40 text-purple-400 flex items-center justify-center text-xl">
+              <i class="fa-solid fa-clone"></i>
+            </div>
+          </div>
+        </div>
+
+        <!-- Categories Row -->
+        <div>
+          <div class="flex justify-between items-center mb-4">
+            <h2 class="text-sm font-bold text-white uppercase tracking-wider">File Categories</h2>
+            <button onclick="navigate('files')" class="text-xs text-blue-400 hover:underline cursor-pointer">View All Files &rarr;</button>
+          </div>
+          <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3" id="categories-container">
+            <!-- Rendered by JS -->
+          </div>
+        </div>
+
+        <!-- Recent Files Section -->
+        <div>
+          <div class="flex justify-between items-center mb-4">
+            <h2 class="text-sm font-bold text-white uppercase tracking-wider">Recent Managed Files (Click File to Open)</h2>
+            <button onclick="navigate('files')" class="text-xs text-blue-400 hover:text-blue-300 font-semibold cursor-pointer">View All Files &rarr;</button>
+          </div>
+
+          <div class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-sm">
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-xs text-slate-300">
+                <thead class="bg-slate-950/80 text-slate-400 border-b border-slate-800 text-[11px] uppercase tracking-wider">
+                  <tr>
+                    <th class="py-3 px-4">File Name</th>
+                    <th class="py-3 px-4">Category</th>
+                    <th class="py-3 px-4">Size</th>
+                    <th class="py-3 px-4">Lifecycle Status</th>
+                    <th class="py-3 px-4">Expiry Countdown</th>
+                    <th class="py-3 px-4 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="table-recent-files" class="divide-y divide-slate-800">
+                  <!-- Injected via JavaScript -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= 2. ALL FILES VIEW ================= -->
+      <section id="view-files" class="hidden space-y-6 max-w-7xl mx-auto">
+        <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
+          <div>
+            <h2 class="text-xl font-bold text-white">All Files</h2>
+            <p class="text-xs text-slate-400">Manage and open all registered storage files</p>
+          </div>
+          <!-- Filter Chips -->
+          <div class="flex items-center gap-2 flex-wrap" id="filter-chips-container">
+            <button onclick="filterCategory('ALL')" id="filter-btn-ALL" class="px-3.5 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-bold shadow-lg shadow-blue-600/30 ring-2 ring-blue-400 cursor-pointer transition">All (7)</button>
+            <button onclick="filterCategory('Documents')" id="filter-btn-Documents" class="px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 rounded-lg text-xs font-medium cursor-pointer transition">Documents</button>
+            <button onclick="filterCategory('Images')" id="filter-btn-Images" class="px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 rounded-lg text-xs font-medium cursor-pointer transition">Images</button>
+            <button onclick="filterCategory('Videos')" id="filter-btn-Videos" class="px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 rounded-lg text-xs font-medium cursor-pointer transition">Videos</button>
+            <button onclick="filterCategory('TEMPORARY')" id="filter-btn-TEMPORARY" class="px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-amber-300 border border-slate-800 rounded-lg text-xs font-medium cursor-pointer transition">Temporary Only</button>
+            <button onclick="filterCategory('PERMANENT')" id="filter-btn-PERMANENT" class="px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 rounded-lg text-xs font-medium cursor-pointer transition">Permanent Only</button>
+          </div>
+        </div>
+
+        <!-- Active Filter Indicator Banner -->
+        <div id="active-filter-indicator" class="hidden flex items-center justify-between px-4 py-2.5 bg-blue-950/60 border border-blue-800/60 rounded-xl text-xs text-blue-300">
+          <div class="flex items-center gap-2">
+            <i class="fa-solid fa-filter text-blue-400"></i>
+            <span id="active-filter-text">Filtered: All</span>
+          </div>
+          <button onclick="filterCategory('ALL')" class="text-xs text-blue-400 hover:text-white underline font-semibold cursor-pointer">Clear Filter & Show All</button>
+        </div>
+
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-sm">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs text-slate-300">
+              <thead class="bg-slate-950/80 text-slate-400 border-b border-slate-800 text-[11px] uppercase tracking-wider">
+                <tr>
+                  <th class="py-3 px-4">File Name</th>
+                  <th class="py-3 px-4">Path</th>
+                  <th class="py-3 px-4">Size</th>
+                  <th class="py-3 px-4">Category</th>
+                  <th class="py-3 px-4">Status</th>
+                  <th class="py-3 px-4">Expiry Date</th>
+                  <th class="py-3 px-4 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="table-all-files" class="divide-y divide-slate-800">
+                <!-- Injected via JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= 3. TEMPORARY STORAGE VIEW ================= -->
+      <section id="view-temporary" class="hidden space-y-6 max-w-7xl mx-auto">
+        <div class="flex justify-between items-center">
+          <div>
+            <h2 class="text-xl font-bold text-white flex items-center gap-2">
+              <i class="fa-solid fa-clock-rotate-left text-amber-400"></i> Smart Temporary Bin
+            </h2>
+            <p class="text-xs text-slate-400">Files with automated expiration tracking. Open, extend, or make permanent.</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <button onclick="simulateTemporaryExpiry()" class="px-3.5 py-1.5 bg-rose-900/40 hover:bg-rose-900 text-rose-300 border border-rose-800/60 rounded-xl text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-sm">
+              <i class="fa-solid fa-bell"></i>
+              <span>Test Expiry Alert</span>
+            </button>
+            <button onclick="triggerExpireWarning()" class="px-3.5 py-1.5 bg-amber-600 hover:bg-amber-500 active:scale-95 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 cursor-pointer">
+              <i class="fa-solid fa-triangle-exclamation"></i> Review Expired Files
+            </button>
+          </div>
+        </div>
+
+        <!-- Temporary Summary Row -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+          <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl">
+            <div class="text-xs text-slate-400">Total Temporary Storage</div>
+            <div class="text-2xl font-bold text-white mt-1" id="temp-summary-size">6.8 GB</div>
+            <div class="text-[11px] text-slate-400 mt-1" id="temp-summary-count">4 active lifecycle files</div>
+          </div>
+          <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl">
+            <div class="text-xs text-amber-400 font-semibold">Expiring Soon (Next 3 Days)</div>
+            <div class="text-2xl font-bold text-amber-400 mt-1" id="temp-summary-soon">2 Files</div>
+            <div class="text-[11px] text-slate-400 mt-1">Warning active</div>
+          </div>
+          <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl">
+            <div class="text-xs text-rose-400 font-semibold">Expired (Period Ended)</div>
+            <div class="text-2xl font-bold text-rose-400 mt-1" id="temp-summary-expired">1 File</div>
+            <div class="text-[11px] text-slate-400 mt-1">Requires user decision</div>
+          </div>
+        </div>
+
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-sm">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs text-slate-300">
+              <thead class="bg-slate-950/80 text-slate-400 border-b border-slate-800 text-[11px] uppercase tracking-wider">
+                <tr>
+                  <th class="py-3 px-4">File</th>
+                  <th class="py-3 px-4">Size</th>
+                  <th class="py-3 px-4">Expiry Date</th>
+                  <th class="py-3 px-4">Remaining Days</th>
+                  <th class="py-3 px-4">Lifecycle Action</th>
+                  <th class="py-3 px-4 text-right">Options</th>
+                </tr>
+              </thead>
+              <tbody id="table-temp-files" class="divide-y divide-slate-800">
+                <!-- Injected via JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= 4. STORAGE ANALYZER VIEW ================= -->
+      <section id="view-storage" class="hidden space-y-6 max-w-7xl mx-auto">
+        <div>
+          <h2 class="text-xl font-bold text-white flex items-center gap-2">
+            <i class="fa-solid fa-chart-pie text-emerald-400"></i> Storage Analytics Dashboard
+          </h2>
+          <p class="text-xs text-slate-400">Deep storage insights, duplicate detection, and category consumption</p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <!-- Main Chart Breakdown -->
+          <div class="lg:col-span-2 bg-slate-900 border border-slate-800 p-6 rounded-2xl">
+            <h3 class="font-bold text-sm text-white mb-4">Storage Consumption Distribution</h3>
+            <div class="w-full bg-slate-800 h-6 rounded-xl overflow-hidden flex mb-4" id="storage-chart-bar">
+              <!-- Rendered via JS -->
+            </div>
+
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 text-xs mt-6" id="storage-breakdown-cards">
+              <!-- Rendered via JS -->
+            </div>
+          </div>
+
+          <!-- Capacity Meter -->
+          <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl flex flex-col justify-between">
+            <div>
+              <h3 class="font-bold text-sm text-white mb-2">Device Capacity</h3>
+              <div class="text-3xl font-extrabold text-white mt-4" id="meter-used">96.0 GB <span class="text-sm font-normal text-slate-400">/ 128.0 GB</span></div>
+              <p class="text-xs text-slate-400 mt-1" id="meter-percent">75% capacity utilized</p>
+            </div>
+            <div class="space-y-3 mt-6">
+              <div class="flex justify-between text-xs text-slate-300">
+                <span>Free Space</span>
+                <span class="font-bold text-emerald-400" id="meter-free">32.0 GB</span>
+              </div>
+              <div class="flex justify-between text-xs text-slate-300">
+                <span>Duplicate Space</span>
+                <span class="font-bold text-purple-400" id="meter-dup">150 MB</span>
+              </div>
+              <div class="flex justify-between text-xs text-slate-300">
+                <span>Recycle Bin Space</span>
+                <span class="font-bold text-rose-400" id="meter-bin">4.0 MB</span>
+              </div>
+            </div>
+            <button onclick="navigate('duplicates')" class="w-full mt-6 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl text-xs font-semibold cursor-pointer">
+              Optimize Storage
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= 5. DUPLICATES VIEW ================= -->
+      <section id="view-duplicates" class="hidden space-y-6 max-w-7xl mx-auto">
+        <div class="flex justify-between items-center">
+          <div>
+            <h2 class="text-xl font-bold text-white flex items-center gap-2">
+              <i class="fa-solid fa-clone text-purple-400"></i> SHA-256 Duplicate Detector
+            </h2>
+            <p class="text-xs text-slate-400">Identical byte-for-byte files identified by SHA-256 hashing</p>
+          </div>
+          <span class="px-3 py-1 bg-purple-950 text-purple-300 border border-purple-800/60 rounded-xl text-xs font-bold" id="dup-badge-total">
+            150 MB Recoverable
+          </span>
+        </div>
+
+        <div id="duplicate-groups-container" class="space-y-4">
+          <!-- Rendered via JS -->
+        </div>
+      </section>
+
+      <!-- ================= 6. RECYCLE BIN VIEW ================= -->
+      <section id="view-bin" class="hidden space-y-6 max-w-7xl mx-auto">
+        <div class="flex justify-between items-center">
+          <div>
+            <h2 class="text-xl font-bold text-white flex items-center gap-2">
+              <i class="fa-solid fa-trash-can text-rose-400"></i> Recycle Bin
+            </h2>
+            <p class="text-xs text-slate-400">Deleted files retain original lifecycle status when restored</p>
+          </div>
+          <button onclick="emptyBin()" class="px-4 py-2 bg-rose-700/30 hover:bg-rose-700 text-rose-300 hover:text-white border border-rose-600/40 rounded-xl text-xs font-semibold transition cursor-pointer">
+            <i class="fa-solid fa-trash mr-1.5"></i> Empty Bin
+          </button>
+        </div>
+
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-sm">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs text-slate-300">
+              <thead class="bg-slate-950/80 text-slate-400 border-b border-slate-800 text-[11px] uppercase tracking-wider">
+                <tr>
+                  <th class="py-3 px-4">File Name</th>
+                  <th class="py-3 px-4">Original Location</th>
+                  <th class="py-3 px-4">Original Status</th>
+                  <th class="py-3 px-4">Deleted Date</th>
+                  <th class="py-3 px-4">Size</th>
+                  <th class="py-3 px-4 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="table-bin-files" class="divide-y divide-slate-800">
+                <!-- Injected via JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= 7. CODE BROWSER VIEW ================= -->
+      <section id="view-code" class="hidden space-y-4 max-w-7xl mx-auto">
+        <div class="flex justify-between items-center">
+          <div>
+            <h2 class="text-xl font-bold text-white">Project Source Code Explorer</h2>
+            <p class="text-xs text-slate-400">Inspect the 61 Android Frontend and 48 Spring Boot Backend files</p>
+          </div>
+          <div class="font-mono text-xs text-blue-400 bg-slate-900 px-3 py-1.5 rounded-lg border border-slate-800">
+            C:\Users\Pavan Kumar\.gemini\antigravity\scratch\
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 max-h-[550px] overflow-y-auto custom-scrollbar text-xs space-y-4">
+            <div>
+              <div class="font-bold text-emerald-400 mb-2 flex items-center gap-1.5">
+                <i class="fa-brands fa-android"></i> Android Frontend
+              </div>
+              <div class="space-y-1 text-slate-400 pl-2 border-l border-slate-800">
+                <div onclick="showCode('MainActivity.kt')" class="cursor-pointer hover:text-blue-400 py-0.5">• MainActivity.kt</div>
+                <div onclick="showCode('NavGraph.kt')" class="cursor-pointer hover:text-blue-400 py-0.5">• NavGraph.kt</div>
+                <div onclick="showCode('HomeScreen.kt')" class="cursor-pointer hover:text-blue-400 py-0.5">• HomeScreen.kt</div>
+                <div onclick="showCode('TemporaryScreen.kt')" class="cursor-pointer hover:text-blue-400 py-0.5">• TemporaryScreen.kt</div>
+                <div onclick="showCode('FileCard.kt')" class="cursor-pointer hover:text-blue-400 py-0.5">• FileCard.kt</div>
+                <div onclick="showCode('ApiService.kt')" class="cursor-pointer hover:text-blue-400 py-0.5">• ApiService.kt</div>
+                <div onclick="showCode('FileRepository.kt')" class="cursor-pointer hover:text-blue-400 py-0.5">• FileRepository.kt</div>
+              </div>
+            </div>
+
+            <div>
+              <div class="font-bold text-amber-400 mb-2 flex items-center gap-1.5">
+                <i class="fa-solid fa-server"></i> Spring Boot Backend
+              </div>
+              <div class="space-y-1 text-slate-400 pl-2 border-l border-slate-800">
+                <div onclick="showCode('SmartStorageBinApplication.java')" class="cursor-pointer hover:text-amber-400 py-0.5">• SmartStorageBinApplication.java</div>
+                <div onclick="showCode('FileController.java')" class="cursor-pointer hover:text-amber-400 py-0.5">• FileController.java</div>
+                <div onclick="showCode('FileServiceImpl.java')" class="cursor-pointer hover:text-amber-400 py-0.5">• FileServiceImpl.java</div>
+                <div onclick="showCode('DuplicateServiceImpl.java')" class="cursor-pointer hover:text-amber-400 py-0.5">• DuplicateServiceImpl.java</div>
+                <div onclick="showCode('FileLifecycleScheduler.java')" class="cursor-pointer hover:text-amber-400 py-0.5">• FileLifecycleScheduler.java</div>
+                <div onclick="showCode('schema.sql')" class="cursor-pointer hover:text-amber-400 py-0.5">• schema.sql</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="lg:col-span-3 bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden flex flex-col h-[550px]">
+            <div class="bg-slate-950 px-5 py-3 border-b border-slate-800 flex justify-between items-center text-xs">
+              <span id="code-filename" class="font-mono font-bold text-blue-400">MainActivity.kt</span>
+              <span class="text-slate-500 font-mono">Production Grade</span>
+            </div>
+            <pre id="code-content" class="p-4 flex-1 overflow-auto custom-scrollbar font-mono text-xs text-slate-300 whitespace-pre leading-relaxed bg-slate-950/60"></pre>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= 8. API CONSOLE VIEW ================= -->
+      <section id="view-api" class="hidden space-y-6 max-w-7xl mx-auto">
+        <div>
+          <h2 class="text-xl font-bold text-white flex items-center gap-2">
+            <i class="fa-solid fa-bolt text-amber-400"></i> REST API Interactive Tester
+          </h2>
+          <p class="text-xs text-slate-400">Execute and test backend endpoints</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div class="p-4 bg-slate-900 rounded-2xl border border-slate-800 flex flex-col justify-between gap-3">
+            <div>
+              <span class="px-2 py-0.5 bg-blue-900 text-blue-300 font-mono font-bold text-[10px] rounded">GET</span>
+              <div class="font-mono text-xs font-semibold text-white mt-1">/api/files</div>
+              <p class="text-[11px] text-slate-400 mt-1">List all active files</p>
+            </div>
+            <button onclick="callMockApi('GET /api/files')" class="w-full py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-semibold cursor-pointer">Execute</button>
+          </div>
+
+          <div class="p-4 bg-slate-900 rounded-2xl border border-slate-800 flex flex-col justify-between gap-3">
+            <div>
+              <span class="px-2 py-0.5 bg-blue-900 text-blue-300 font-mono font-bold text-[10px] rounded">GET</span>
+              <div class="font-mono text-xs font-semibold text-white mt-1">/api/storage</div>
+              <p class="text-[11px] text-slate-400 mt-1">Storage metrics</p>
+            </div>
+            <button onclick="callMockApi('GET /api/storage')" class="w-full py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-semibold cursor-pointer">Execute</button>
+          </div>
+
+          <div class="p-4 bg-slate-900 rounded-2xl border border-slate-800 flex flex-col justify-between gap-3">
+            <div>
+              <span class="px-2 py-0.5 bg-blue-900 text-blue-300 font-mono font-bold text-[10px] rounded">GET</span>
+              <div class="font-mono text-xs font-semibold text-white mt-1">/api/duplicates</div>
+              <p class="text-[11px] text-slate-400 mt-1">SHA-256 clusters</p>
+            </div>
+            <button onclick="callMockApi('GET /api/duplicates')" class="w-full py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-semibold cursor-pointer">Execute</button>
+          </div>
+
+          <div class="p-4 bg-slate-900 rounded-2xl border border-slate-800 flex flex-col justify-between gap-3">
+            <div>
+              <span class="px-2 py-0.5 bg-amber-900 text-amber-300 font-mono font-bold text-[10px] rounded">PUT</span>
+              <div class="font-mono text-xs font-semibold text-white mt-1">/api/files/1/convert</div>
+              <p class="text-[11px] text-slate-400 mt-1">Convert to permanent</p>
+            </div>
+            <button onclick="callMockApi('PUT /api/files/1/convert-permanent')" class="w-full py-1.5 bg-amber-600 hover:bg-amber-500 text-white rounded-lg text-xs font-semibold cursor-pointer">Execute</button>
+          </div>
+        </div>
+
+        <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl">
+          <div class="text-xs font-mono font-semibold text-slate-400 mb-2 flex justify-between">
+            <span>Response JSON (200 OK)</span>
+            <span class="text-emerald-400 font-semibold">Response time: ~14ms</span>
+          </div>
+          <pre id="api-output" class="font-mono text-xs text-emerald-400 bg-slate-950 p-4 rounded-xl overflow-x-auto max-h-72 custom-scrollbar">Click "Execute" on any API card above to run live queries...</pre>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- ================= MODAL DIALOGS ================= -->
+  <div id="modal-backdrop" style="display: none;" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden" onclick="if(event.target === this) closeModal()">
+    <div id="modal-container" class="bg-slate-900 border border-slate-700 rounded-3xl max-w-lg w-full p-6 shadow-2xl text-slate-100 animate-in fade-in zoom-in duration-200 max-h-[92vh] overflow-y-auto custom-scrollbar" onclick="event.stopPropagation()">
+      <!-- Dynamic Modal Content -->
+    </div>
+  </div>
+
+  <!-- ================= CORE JAVASCRIPT ================= -->
+  <script>
+    // State (Zero storage requirements - works universally in browsers, iframes & artifacts)
+    let fileAccessGranted = true;
+
+    let files = [
+      { 
+        id: 1, 
+        name: "DBMS Notes.pdf", 
+        path: "/storage/Download/DBMS Notes.pdf", 
+        size: 4500000, 
+        type: "PDF", 
+        category: "Documents", 
+        status: "TEMPORARY", 
+        remainingDays: 3, 
+        expiry: calculateDate(3), 
+        hash: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        content: "DATABASE MANAGEMENT SYSTEMS (DBMS)\nUnit 1: Relational Model & Query Optimization\n\n1. Relational Database Concepts:\n   - Tuples, Relations, Schemas, Attributes.\n   - Primary Key & Foreign Key Integrity Constraints.\n\n2. SQL & Normalization:\n   - 1NF, 2NF, 3NF, and BCNF.\n   - Lossless-join decomposition and dependency preservation.\n\n3. Transaction Processing (ACID):\n   - Atomicity, Consistency, Isolation, Durability.\n   - Two-Phase Locking (2PL) and Timestamp Ordering Protocols.\n\n4. Storage Engines & B+ Tree Indexing:\n   - Multi-level B+ Tree structure for balanced page I/O lookups."
+      },
+      { 
+        id: 2, 
+        name: "OS Lecture.mp4", 
+        path: "/storage/Movies/OS Lecture.mp4", 
+        size: 512000000, 
+        type: "MP4", 
+        category: "Videos", 
+        status: "PERMANENT", 
+        remainingDays: null, 
+        expiry: null, 
+        hash: "7f83b1657ff1fc53b92dc18148a1d65dfc2d4b1fa3d677284addd200126d9069",
+        content: "Video Stream: Operating Systems - Lecture 14: Virtual Memory Management, Page Replacement (LRU, FIFO, Clock Algorithm), and Thrashing Prevention."
+      },
+      { 
+        id: 3, 
+        name: "Vacation Photo.jpg", 
+        path: "/storage/DCIM/Vacation Photo.jpg", 
+        size: 3200000, 
+        type: "JPG", 
+        category: "Images", 
+        status: "PERMANENT", 
+        remainingDays: null, 
+        expiry: null, 
+        hash: "3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855a",
+        content: "Image Asset: High-resolution photography (3840 x 2160, ISO 100, f/2.8, Exposure 1/250s, Color Profile: Display P3)."
+      },
+      { 
+        id: 4, 
+        name: "Assignment 1.docx", 
+        path: "/storage/Documents/Assignment 1.docx", 
+        size: 1200000, 
+        type: "DOCX", 
+        category: "Documents", 
+        status: "TEMPORARY", 
+        remainingDays: 1, 
+        expiry: calculateDate(1), 
+        hash: "11223344556677889900aabbccddeeff11223344556677889900aabbccddeeff",
+        content: "SMART STORAGE BIN - SYSTEM ARCHITECTURE REPORT\nStudent Name: Pavan Kumar\nProject: Mobile Lifecycle-based Storage Automation\n\n1. Abstract:\nSmart Storage Bin automates mobile file lifecycle management by intercepting downloads, photos, and documents, classifying them into temporary or permanent retention pools, detecting byte-for-byte SHA-256 duplicates, and enforcing a zero auto-deletion policy with actionable expiry warnings.\n\n2. Key Architectural Modules:\n- Android Jetpack Compose Frontend (61 source files)\n- Spring Boot 3.3.4 REST API Microservice (48 source files)\n- MySQL 8 Relational Schema with JPA Auditing."
+      },
+      { 
+        id: 5, 
+        name: "Old Notes.pdf", 
+        path: "/storage/Download/Old Notes.pdf", 
+        size: 5400000, 
+        type: "PDF", 
+        category: "Documents", 
+        status: "TEMPORARY", 
+        remainingDays: 0, 
+        expiry: calculateDate(-2), 
+        expired: true, 
+        hash: "a1b2c3d4e5f60718293a4b5c6d7e8f90123456789abcdef0123456789abcdef0",
+        content: "COMPUTER NETWORKS & DISTRIBUTED SYSTEMS\n\nChapter 3: Transport Layer Protocols\n- TCP Header Format, 3-Way Handshake (SYN, SYN-ACK, ACK)\n- Congestion Control: AIMD, Slow Start, Fast Retransmit, Fast Recovery\n- UDP Stateless Datagram Protocol & Real-Time Multimedia Streaming"
+      },
+      { 
+        id: 6, 
+        name: "Screenshot_1.png", 
+        path: "/storage/Pictures/Screenshot_1.png", 
+        size: 2500000, 
+        type: "PNG", 
+        category: "Images", 
+        status: "TEMPORARY", 
+        remainingDays: 2, 
+        expiry: calculateDate(2), 
+        hash: "fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210",
+        content: "UI Screenshot: System Dashboard Overview captured on 2026-10-02."
+      },
+      { 
+        id: 7, 
+        name: "Duplicate Video.mp4", 
+        path: "/storage/Download/Dup.mp4", 
+        size: 150000000, 
+        type: "MP4", 
+        category: "Videos", 
+        status: "PERMANENT", 
+        remainingDays: null, 
+        expiry: null, 
+        hash: "7f83b1657ff1fc53b92dc18148a1d65dfc2d4b1fa3d677284addd200126d9069",
+        content: "Duplicate copy of OS Lecture.mp4 (Identical SHA-256 Hash signature)."
+      }
+    ];
+
+    let binFiles = [
+      { id: 10, name: "Deleted Image.jpg", path: "/storage/DCIM/Deleted Image.jpg", size: 4000000, type: "JPG", originalStatus: "PERMANENT", deletedAt: "2026-10-01", content: "Deleted photograph in recycle bin." }
+    ];
+
+    let notifications = [
+      { id: 1, title: "Temporary File Expired", text: '"Old Notes.pdf" has ended its retention period.', type: "EXPIRED", read: false },
+      { id: 2, title: "Duplicate SHA-256 Found", text: '"Duplicate Video.mp4" wastes 150 MB.', type: "DUP", read: false }
+    ];
+
+    let currentTab = 'dashboard';
+    let activeFilter = 'ALL';
+    let pendingInsertedFile = null;
+
+    function calculateDate(offsetDays) {
+      const d = new Date();
+      d.setDate(d.getDate() + offsetDays);
+      return d.toISOString().split('T')[0];
+    }
+
+    function formatBytes(bytes) {
+      if (!bytes || bytes === 0) return '0 B';
+      const k = 1024;
+      const sizes = ['B', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return (bytes / Math.pow(k, i)).toFixed(1) + ' ' + sizes[i];
+    }
+
+    function detectCategory(filename) {
+      const ext = filename.split('.').pop().toLowerCase();
+      if (['pdf', 'docx', 'doc', 'txt', 'pptx', 'xlsx', 'json', 'md', 'py', 'html', 'csv', 'js', 'java', 'kt'].includes(ext)) return 'Documents';
+      if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext)) return 'Images';
+      if (['mp4', 'mkv', 'avi', 'mov'].includes(ext)) return 'Videos';
+      if (['mp3', 'wav', 'aac', 'flac'].includes(ext)) return 'Audio';
+      if (['zip', 'rar', '7z', 'tar', 'gz'].includes(ext)) return 'Archives';
+      if (['apk', 'exe', 'dmg'].includes(ext)) return 'Applications';
+      return 'Other';
+    }
+
+    // Audio Notification Chime (Web Audio API Synthesizer)
+    function playNotificationSound() {
+      try {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(587.33, audioCtx.currentTime); // D5
+        osc.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.15); // A5
+        gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.4);
+      } catch (e) {
+        console.log("Audio notification skipped");
+      }
+    }
+
+    // System Push Notification (Browser Notifications API - Safe wrapper)
+    function sendSystemNotification(title, body) {
+      try {
+        if ("Notification" in window && Notification.permission === "granted") {
+          new Notification(title, {
+            body: body,
+            icon: "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/svgs/solid/clock-rotate-left.svg"
+          });
+        }
+      } catch (e) {
+        console.warn("Notification skipped:", e);
+      }
+    }
+
+    function showToast(message, type = "success") {
+      try {
+        const container = document.getElementById('toast-container');
+        if (!container) return;
+        const toast = document.createElement('div');
+        const icon = type === "success" ? "fa-circle-check text-emerald-400" : (type === "warning" ? "fa-triangle-exclamation text-amber-400" : "fa-circle-info text-blue-400");
+        const border = type === "success" ? "border-emerald-700/60" : (type === "warning" ? "border-amber-700/60" : "border-blue-700/60");
+        toast.className = `p-3.5 bg-slate-900/95 backdrop-blur border ${border} text-slate-100 rounded-2xl shadow-2xl text-xs font-semibold flex items-center gap-3 animate-in fade-in slide-in-from-top-3 duration-300 pointer-events-auto`;
+        toast.innerHTML = `<i class="fa-solid ${icon} text-base"></i> <span>${message}</span>`;
+        container.appendChild(toast);
+        setTimeout(() => {
+          toast.classList.add('opacity-0', 'transition', 'duration-300');
+          setTimeout(() => toast.remove(), 300);
+        }, 3500);
+      } catch (e) {
+        console.log(message);
+      }
+    }
+
+    function showDuplicateModal() {
+      const hashGroups = {};
+      files.forEach(f => {
+        if (f.hash) {
+          hashGroups[f.hash] = hashGroups[f.hash] || [];
+          hashGroups[f.hash].push(f);
+        }
+      });
+      const dupKeys = Object.keys(hashGroups).filter(k => hashGroups[k].length > 1);
+
+      if (dupKeys.length === 0) {
+        openModal(`
+          <div class="text-center p-4">
+            <div class="w-14 h-14 rounded-2xl bg-emerald-900/40 border border-emerald-500/30 text-emerald-400 flex items-center justify-center text-2xl mx-auto mb-3">
+              <i class="fa-solid fa-circle-check"></i>
+            </div>
+            <h3 class="text-base font-bold text-white">No Duplicate Files Found</h3>
+            <p class="text-xs text-slate-400 mt-1 mb-4">All files in storage have unique SHA-256 signatures.</p>
+            <button onclick="closeModal()" class="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-semibold cursor-pointer">
+              Close
+            </button>
+          </div>
+        `, 'max-w-md');
+        return;
+      }
+
+      openModal(`
+        <div class="text-center mb-4">
+          <div class="w-12 h-12 rounded-2xl bg-purple-900/40 border border-purple-500/30 text-purple-400 flex items-center justify-center text-xl mx-auto mb-2">
+            <i class="fa-solid fa-clone"></i>
+          </div>
+          <h3 class="text-base font-bold text-white">SHA-256 Duplicate Groups</h3>
+          <p class="text-xs text-slate-400 mt-1">${dupKeys.length} duplicate cluster(s) detected</p>
+        </div>
+
+        <div class="space-y-3 mb-4">
+          ${dupKeys.map(hash => {
+            const group = hashGroups[hash];
+            const wasted = (group.length - 1) * group[0].size;
+            return `
+              <div class="bg-slate-950 p-3.5 rounded-2xl border border-slate-800 text-xs space-y-2">
+                <div class="flex justify-between items-center text-[11px] border-b border-slate-800 pb-1.5">
+                  <span class="font-mono text-purple-400">${hash.substring(0, 20)}...</span>
+                  <span class="text-amber-400 font-bold">${formatBytes(wasted)} wasted</span>
+                </div>
+                ${group.map((f, i) => `
+                  <div class="flex justify-between items-center py-1">
+                    <div class="cursor-pointer" onclick="openFile(${f.id})">
+                      <div class="font-semibold text-slate-200 hover:text-blue-400 flex items-center gap-1.5"><i class="${getFileIcon(f.type)}"></i> ${f.name}</div>
+                      <div class="text-[10px] text-slate-500">${f.path}</div>
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                      <button onclick="openFile(${f.id})" class="px-2 py-0.5 bg-blue-900/50 hover:bg-blue-800 text-blue-300 rounded text-[10px] cursor-pointer">Open</button>
+                      ${i > 0 ? `
+                        <button onclick="deleteFileToBin(${f.id}); closeModal();" class="px-2 py-0.5 bg-rose-700/30 hover:bg-rose-700 text-rose-300 hover:text-white border border-rose-600/40 rounded text-[10px] font-semibold cursor-pointer">
+                          Delete Copy
+                        </button>
+                      ` : '<span class="text-[10px] text-slate-500 px-1">Original</span>'}
+                    </div>
+                  </div>
+                `).join('')}
+              </div>
+            `;
+          }).join('')}
+        </div>
+
+        <button onclick="closeModal()" class="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-semibold cursor-pointer">
+          Close
+        </button>
+      `, 'max-w-lg');
+    }
+
+    // ==========================================
+    // ⏰ TEMPORARY FILE EXPIRY NOTIFICATION SYSTEM
+    // ==========================================
+    function triggerFileExpiredAlert(file) {
+      playNotificationSound();
+      sendSystemNotification(
+        `⏰ Retention Expired: "${file.name}"`,
+        `The temporary retention period has ended. Zero auto-deletion policy active. Review now!`
+      );
+
+      // Add to notifications dropdown
+      notifications.unshift({
+        id: Date.now(),
+        title: "Temporary Retention Expired",
+        text: `"${file.name}" has completed its retention time. Action required.`,
+        type: "EXPIRED",
+        fileId: file.id,
+        read: false
+      });
+
+      // Update bell indicator
+      document.getElementById('bell-dot').classList.remove('hidden');
+      document.getElementById('bell-dot-ping').classList.remove('hidden');
+
+      // Pop up high-priority Expiry Decision Modal
+      openModal(`
+        <div class="text-center mb-4">
+          <div class="w-16 h-16 rounded-3xl bg-rose-950/80 border border-rose-600/60 text-rose-400 flex items-center justify-center text-3xl mx-auto mb-3 shadow-2xl shadow-rose-600/30 animate-bounce">
+            <i class="fa-solid fa-clock-rotate-left"></i>
+          </div>
+          <span class="px-3 py-1 rounded-full bg-rose-950 text-rose-300 border border-rose-800 text-[10px] font-bold uppercase tracking-wider">
+            Retention Duration Completed
+          </span>
+          <h3 class="text-base font-bold text-white mt-2">Temporary File Time Expired</h3>
+          <p class="text-xs text-rose-300 font-semibold mt-1">"${file.name}" (${formatBytes(file.size)})</p>
+          <p class="text-[11px] text-slate-400 mt-1">
+            Under the capstone <strong class="text-slate-200">Zero Auto-Deletion Policy</strong>, this file is preserved until you choose an action below.
+          </p>
+        </div>
+
+        <div class="bg-slate-950 p-4 rounded-2xl border border-rose-900/50 space-y-3 mb-4">
+          <div class="flex justify-between items-center text-xs">
+            <span class="text-slate-400">File Category:</span>
+            <span class="font-semibold text-slate-200">${file.category}</span>
+          </div>
+          <div class="flex justify-between items-center text-xs">
+            <span class="text-slate-400">Expiry Date:</span>
+            <span class="font-mono text-rose-400 font-bold">${file.expiry || 'Today'}</span>
+          </div>
+          <div class="flex justify-between items-center text-xs">
+            <span class="text-slate-400">SHA-256 Signature:</span>
+            <span class="font-mono text-purple-400">${(file.hash || 'N/A').substring(0, 16)}...</span>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2 mb-2">
+          <button onclick="convertPermanent(${file.id}); closeModal();" class="py-2.5 bg-emerald-700 hover:bg-emerald-600 text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition cursor-pointer shadow">
+            <i class="fa-solid fa-shield"></i>
+            <span>Make Permanent</span>
+          </button>
+          <button onclick="extendFileExpiry(${file.id}, 7); closeModal();" class="py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition cursor-pointer shadow">
+            <i class="fa-solid fa-calendar-plus"></i>
+            <span>Extend (+7 Days)</span>
+          </button>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2">
+          <button onclick="openFile(${file.id});" class="py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-medium flex items-center justify-center gap-1.5 transition cursor-pointer">
+            <i class="fa-solid fa-eye"></i>
+            <span>Open & View File</span>
+          </button>
+          <button onclick="deleteFileToBin(${file.id}); closeModal();" class="py-2 bg-rose-900/40 hover:bg-rose-900 text-rose-300 border border-rose-800/40 rounded-xl text-xs font-medium flex items-center justify-center gap-1.5 transition cursor-pointer">
+            <i class="fa-solid fa-trash"></i>
+            <span>Move to Bin</span>
+          </button>
+        </div>
+      `, 'max-w-md');
+
+      renderTables();
+    }
+
+    // Triggered by "Test Expiry Alert" button to simulate expiration of temporary files
+    function simulateTemporaryExpiry() {
+      const activeTempFile = files.find(f => f.status === 'TEMPORARY' && !f.expired && f.remainingDays > 0) || files.find(f => f.status === 'TEMPORARY');
+      if (!activeTempFile) {
+        showToast("No temporary files available to simulate!", "warning");
+        return;
+      }
+
+      activeTempFile.remainingDays = 0;
+      activeTempFile.expired = true;
+      activeTempFile.expiry = calculateDate(0);
+
+      triggerFileExpiredAlert(activeTempFile);
+      showToast(`Simulated time completion for "${activeTempFile.name}"!`, "warning");
+    }
+
+    // Dynamic Expiry Warning Dialog (Batch Review)
+    function triggerExpireWarning() {
+      const expiredList = files.filter(f => f.status === 'TEMPORARY' && (f.expired || f.remainingDays <= 0));
+
+      if (expiredList.length === 0) {
+        openModal(`
+          <div class="text-center p-4">
+            <div class="w-14 h-14 rounded-2xl bg-emerald-900/40 border border-emerald-500/30 text-emerald-400 flex items-center justify-center text-2xl mx-auto mb-3">
+              <i class="fa-solid fa-circle-check"></i>
+            </div>
+            <h3 class="text-base font-bold text-white">All Temporary Files Are Active</h3>
+            <p class="text-xs text-slate-400 mt-1 mb-4">There are currently 0 expired files requiring review.</p>
+            <button onclick="closeModal()" class="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-semibold cursor-pointer">
+              Close
+            </button>
+          </div>
+        `, 'max-w-md');
+        return;
+      }
+
+      openModal(`
+        <div class="text-center mb-4">
+          <div class="w-12 h-12 rounded-2xl bg-rose-900/40 border border-rose-500/30 text-rose-400 flex items-center justify-center text-xl mx-auto mb-2">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+          </div>
+          <h3 class="text-base font-bold text-white">Temporary Files Expired (${expiredList.length})</h3>
+          <p class="text-xs text-slate-400 mt-1">Under the capstone zero auto-deletion policy, please review and select an action for each file:</p>
+        </div>
+
+        <div class="space-y-3 mb-4">
+          ${expiredList.map(f => `
+            <div class="bg-slate-950 p-4 rounded-2xl border border-rose-800/40 space-y-3">
+              <div class="flex justify-between items-start">
+                <div onclick="openFile(${f.id})" class="cursor-pointer">
+                  <div class="font-bold text-xs text-white hover:text-blue-400 flex items-center gap-1.5">
+                    <i class="${getFileIcon(f.type)}"></i> ${f.name}
+                  </div>
+                  <div class="text-[11px] text-slate-400 mt-0.5">${formatBytes(f.size)} • Expired on ${f.expiry || 'Today'}</div>
+                </div>
+                <span class="px-2 py-0.5 bg-rose-950 text-rose-300 border border-rose-800/60 rounded text-[9px] font-bold">EXPIRED</span>
+              </div>
+
+              <div class="grid grid-cols-4 gap-2">
+                <button onclick="openFile(${f.id})" class="py-2 px-1 bg-blue-900/50 hover:bg-blue-800 text-blue-200 rounded-xl text-[11px] font-semibold text-center transition flex items-center justify-center gap-1 cursor-pointer">
+                  <i class="fa-solid fa-eye text-[10px]"></i> Open
+                </button>
+                <button onclick="convertPermanent(${f.id}); closeModal();" class="py-2 px-1 bg-emerald-700 hover:bg-emerald-600 text-white rounded-xl text-[11px] font-semibold text-center transition flex items-center justify-center gap-1 cursor-pointer">
+                  <i class="fa-solid fa-shield text-[10px]"></i> Keep Perm
+                </button>
+                <button onclick="extendFileExpiry(${f.id}, 7); closeModal();" class="py-2 px-1 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-[11px] font-semibold text-center transition flex items-center justify-center gap-1 cursor-pointer">
+                  <i class="fa-solid fa-calendar-plus text-[10px]"></i> +7 Days
+                </button>
+                <button onclick="deleteFileToBin(${f.id}); closeModal();" class="py-2 px-1 bg-rose-700/30 hover:bg-rose-700 text-rose-300 hover:text-white border border-rose-600/40 rounded-xl text-[11px] font-semibold text-center transition flex items-center justify-center gap-1 cursor-pointer">
+                  <i class="fa-solid fa-trash text-[10px]"></i> To Bin
+                </button>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+
+        <button onclick="closeModal()" class="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-semibold cursor-pointer">
+          Dismiss Dialog
+        </button>
+      `, 'max-w-lg');
+    }
+
+    // ==========================================
+    // 🌟 FULL RICH OPEN FILE VIEWER & EDITOR
+    // ==========================================
+    function openFile(id) {
+      const file = files.find(f => f.id === id) || binFiles.find(b => b.id === id);
+      if (!file) {
+        showToast("File not found!", "error");
+        return;
+      }
+
+      const isTextOrDoc = ['TXT', 'MD', 'JSON', 'PY', 'HTML', 'CSV', 'JS', 'JAVA', 'KT', 'DOCX', 'DOC'].includes(file.type);
+      const isPdf = file.type === 'PDF';
+      const isImg = ['JPG', 'JPEG', 'PNG', 'GIF', 'WEBP', 'SVG'].includes(file.type);
+      const isVideo = ['MP4', 'MKV', 'AVI', 'MOV'].includes(file.type);
+      const isAudio = ['MP3', 'WAV', 'AAC', 'FLAC'].includes(file.type);
+
+      let previewContentHtml = '';
+
+      if (isTextOrDoc) {
+        previewContentHtml = `
+          <div class="bg-slate-950 border border-slate-800 rounded-2xl overflow-hidden flex flex-col mb-4">
+            <div class="bg-slate-900/80 px-4 py-2 border-b border-slate-800 flex justify-between items-center text-[11px] text-slate-400">
+              <span class="flex items-center gap-2"><i class="fa-solid fa-code text-blue-400"></i> Interactive Document & Code Editor</span>
+              <span id="editor-status" class="text-emerald-400 font-mono">Editable</span>
+            </div>
+            <textarea id="file-editor-content" rows="12" class="w-full bg-slate-950 p-4 font-mono text-xs text-slate-200 leading-relaxed focus:outline-none focus:ring-1 focus:ring-blue-500 custom-scrollbar resize-y border-none" placeholder="Type or view file contents here...">${file.content || ''}</textarea>
+            <div class="bg-slate-900/50 px-4 py-2 border-t border-slate-800/80 flex justify-between items-center text-[11px]">
+              <span class="text-slate-500 font-mono">Lines: ${(file.content || '').split('\n').length} • Characters: ${(file.content || '').length}</span>
+              <button onclick="saveFileContent(${file.id})" class="px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-semibold flex items-center gap-1.5 transition cursor-pointer shadow">
+                <i class="fa-solid fa-floppy-disk"></i> Save Changes
+              </button>
+            </div>
+          </div>
+        `;
+      } else if (isPdf) {
+        previewContentHtml = `
+          <div class="bg-slate-950 border border-slate-800 rounded-2xl p-6 mb-4 flex flex-col gap-4">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+              <div class="flex items-center gap-2 text-rose-400 font-bold text-sm">
+                <i class="fa-solid fa-file-pdf text-lg"></i>
+                <span>PDF Document Reader (Page 1 of 1)</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <button onclick="downloadFile(${file.id})" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs flex items-center gap-1 cursor-pointer">
+                  <i class="fa-solid fa-download"></i> Download PDF
+                </button>
+              </div>
+            </div>
+            <div class="bg-slate-900 p-6 rounded-xl border border-slate-800 font-serif text-slate-200 text-xs leading-relaxed space-y-3 whitespace-pre-line shadow-inner max-h-80 overflow-y-auto custom-scrollbar">
+              ${file.content || 'PDF Document Binary Page View'}
+            </div>
+          </div>
+        `;
+      } else if (isImg) {
+        previewContentHtml = `
+          <div class="bg-slate-950 border border-slate-800 rounded-2xl p-4 mb-4 flex flex-col items-center justify-center">
+            ${file.objectUrl ? `
+              <img src="${file.objectUrl}" alt="${file.name}" class="max-h-80 max-w-full rounded-xl object-contain shadow-lg mb-3">
+            ` : `
+              <div class="w-full h-64 rounded-xl bg-gradient-to-tr from-slate-900 via-indigo-950/40 to-slate-900 border border-slate-800 flex flex-col items-center justify-center gap-3 text-slate-400 mb-3">
+                <i class="fa-solid fa-image text-5xl text-emerald-400/80"></i>
+                <div class="text-xs font-semibold text-slate-300">${file.name}</div>
+                <div class="text-[11px] text-slate-500">Image Asset • 3840 x 2160 • Display P3 Color Profile</div>
+              </div>
+            `}
+            <div class="text-[11px] text-slate-400 flex items-center gap-4">
+              <span>Resolution: 4K Ultra-HD</span>
+              <span>•</span>
+              <span>Format: ${file.type}</span>
+              <span>•</span>
+              <span>Size: ${formatBytes(file.size)}</span>
+            </div>
+          </div>
+        `;
+      } else if (isVideo) {
+        previewContentHtml = `
+          <div class="bg-slate-950 border border-slate-800 rounded-2xl p-4 mb-4 flex flex-col items-center justify-center">
+            ${file.objectUrl ? `
+              <video controls src="${file.objectUrl}" class="max-h-80 w-full rounded-xl shadow-lg mb-3 bg-black"></video>
+            ` : `
+              <div class="w-full h-64 rounded-xl bg-black/90 border border-slate-800 flex flex-col items-center justify-center gap-4 text-slate-400 mb-3 relative overflow-hidden group">
+                <div class="w-16 h-16 rounded-full bg-blue-600/90 text-white flex items-center justify-center text-2xl shadow-xl shadow-blue-600/50 group-hover:scale-110 transition cursor-pointer">
+                  <i class="fa-solid fa-play ml-1"></i>
+                </div>
+                <div class="text-xs font-semibold text-slate-300 z-10">${file.name}</div>
+                <div class="text-[11px] text-slate-500 z-10">1080p 60fps • Duration: 45:12 • Codec: H.264 / AAC</div>
+                <div class="w-full bg-slate-800 h-1 absolute bottom-0 left-0">
+                  <div class="bg-blue-500 h-full w-1/3"></div>
+                </div>
+              </div>
+            `}
+            <div class="text-[11px] text-slate-400">Media Player Engine (HTML5 Video Simulator)</div>
+          </div>
+        `;
+      } else {
+        previewContentHtml = `
+          <div class="bg-slate-950 border border-slate-800 rounded-2xl p-6 mb-4 space-y-3">
+            <div class="flex items-center gap-3 text-slate-300">
+              <i class="fa-solid fa-box text-2xl text-blue-400"></i>
+              <div>
+                <div class="font-bold text-xs">${file.name}</div>
+                <div class="text-[11px] text-slate-500">${file.path}</div>
+              </div>
+            </div>
+            <pre class="bg-slate-900 p-4 rounded-xl font-mono text-xs text-slate-400 whitespace-pre overflow-x-auto">${file.content || 'Binary data stream - ' + formatBytes(file.size)}</pre>
+          </div>
+        `;
+      }
+
+      openModal(`
+        <!-- Viewer Header -->
+        <div class="flex items-start justify-between border-b border-slate-800 pb-4 mb-4">
+          <div class="flex items-center gap-3">
+            <div class="w-12 h-12 rounded-2xl bg-slate-800 border border-slate-700 flex items-center justify-center text-xl">
+              <i class="${getFileIcon(file.type)}"></i>
+            </div>
+            <div>
+              <h2 class="text-base font-bold text-white flex items-center gap-2">
+                ${file.name}
+              </h2>
+              <div class="text-xs text-slate-400 flex items-center gap-2 mt-0.5">
+                <span>${file.category}</span>
+                <span>•</span>
+                <span>${formatBytes(file.size)}</span>
+                <span>•</span>
+                <span>${file.status || file.originalStatus || 'ACTIVE'}</span>
+              </div>
+            </div>
+          </div>
+          <button onclick="closeModal()" class="w-8 h-8 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center transition cursor-pointer">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+
+        <!-- File Metadata Strip -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4 text-[11px]">
+          <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800">
+            <div class="text-slate-500">Storage Path</div>
+            <div class="font-mono text-slate-300 truncate mt-0.5" title="${file.path}">${file.path}</div>
+          </div>
+          <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800">
+            <div class="text-slate-500">Retention Status</div>
+            <div class="font-semibold text-blue-400 mt-0.5">${file.status === 'TEMPORARY' ? (file.remainingDays + ' Days Left') : (file.status || 'Permanent')}</div>
+          </div>
+          <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800">
+            <div class="text-slate-500">Expiry Date</div>
+            <div class="font-mono text-slate-300 mt-0.5">${file.expiry || 'No Expiration'}</div>
+          </div>
+          <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800">
+            <div class="text-slate-500">SHA-256 Hash</div>
+            <div class="font-mono text-purple-400 truncate mt-0.5" title="${file.hash || 'N/A'}">${(file.hash || 'N/A').substring(0, 12)}...</div>
+          </div>
+        </div>
+
+        <!-- Main Body Preview / Editor -->
+        ${previewContentHtml}
+
+        <!-- Bottom Action Bar -->
+        <div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-800">
+          <div class="flex items-center gap-2">
+            <button onclick="downloadFile(${file.id})" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer shadow">
+              <i class="fa-solid fa-download"></i> Download File
+            </button>
+            <button onclick="openFileInTab(${file.id})" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer">
+              <i class="fa-solid fa-arrow-up-right-from-square"></i> Open in New Tab
+            </button>
+          </div>
+
+          <div class="flex items-center gap-2">
+            ${file.status === 'TEMPORARY' ? `
+              <button onclick="extendFileExpiry(${file.id}, 7); openFile(${file.id});" class="px-3 py-2 bg-amber-600/20 hover:bg-amber-600 text-amber-300 hover:text-white border border-amber-500/40 rounded-xl text-xs font-semibold transition cursor-pointer">
+                <i class="fa-solid fa-calendar-plus mr-1"></i> +7 Days
+              </button>
+              <button onclick="convertPermanent(${file.id}); openFile(${file.id});" class="px-3 py-2 bg-emerald-600/20 hover:bg-emerald-600 text-emerald-300 hover:text-white border border-emerald-500/40 rounded-xl text-xs font-semibold transition cursor-pointer">
+                <i class="fa-solid fa-shield mr-1"></i> Make Permanent
+              </button>
+            ` : ''}
+            <button onclick="deleteFileToBin(${file.id}); closeModal();" class="px-3 py-2 bg-rose-700/30 hover:bg-rose-700 text-rose-300 hover:text-white border border-rose-600/40 rounded-xl text-xs font-semibold transition cursor-pointer">
+              <i class="fa-solid fa-trash mr-1"></i> Bin
+            </button>
+          </div>
+        </div>
+      `, 'max-w-3xl');
+    }
+
+    function saveFileContent(id) {
+      const file = files.find(f => f.id === id);
+      if (!file) return;
+      const editor = document.getElementById('file-editor-content');
+      if (editor) {
+        const newText = editor.value;
+        file.content = newText;
+        file.size = new Blob([newText]).size;
+        showToast(`Saved changes to "${file.name}" (${formatBytes(file.size)})!`);
+        renderTables();
+      }
+    }
+
+    function downloadFile(id) {
+      const file = files.find(f => f.id === id) || binFiles.find(b => b.id === id);
+      if (!file) return;
+
+      let blob = file.blob;
+      if (!blob) {
+        const content = file.content || `Content of ${file.name}\nGenerated by Smart Storage Bin`;
+        blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+      }
+
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = file.name;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      showToast(`Downloading "${file.name}"...`);
+    }
+
+    function openFileInTab(id) {
+      const file = files.find(f => f.id === id) || binFiles.find(b => b.id === id);
+      if (!file) return;
+
+      if (file.objectUrl) {
+        window.open(file.objectUrl, '_blank');
+        return;
+      }
+
+      const content = file.content || `File: ${file.name}\nSize: ${formatBytes(file.size)}\nStatus: ${file.status}`;
+      const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      window.open(url, '_blank');
+    }
+
+    function showFileActions(id) {
+      const file = files.find(f => f.id === id);
+      if (!file) return;
+
+      openModal(`
+        <h3 class="text-base font-bold text-white mb-1">${file.name}</h3>
+        <p class="text-xs text-slate-400 mb-4">${formatBytes(file.size)} • ${file.category} • ${file.status}</p>
+
+        <div class="space-y-2">
+          <button onclick="openFile(${file.id})" class="w-full py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-semibold cursor-pointer flex items-center justify-center gap-1.5">
+            <i class="fa-solid fa-arrow-up-right-from-square"></i> Open & View File
+          </button>
+          <button onclick="downloadFile(${file.id})" class="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-semibold cursor-pointer flex items-center justify-center gap-1.5">
+            <i class="fa-solid fa-download"></i> Download File
+          </button>
+          ${file.status === 'TEMPORARY' ? `
+            <button onclick="extendFileExpiry(${file.id}, 7); closeModal();" class="w-full py-2.5 bg-amber-600/20 hover:bg-amber-600 text-amber-300 hover:text-white border border-amber-500/40 rounded-xl text-xs font-semibold cursor-pointer">
+              <i class="fa-solid fa-calendar-plus mr-1.5"></i> Extend Retention (+7 Days)
+            </button>
+            <button onclick="convertPermanent(${file.id}); closeModal();" class="w-full py-2.5 bg-emerald-700 hover:bg-emerald-600 text-white rounded-xl text-xs font-semibold cursor-pointer">
+              <i class="fa-solid fa-shield mr-1.5"></i> Convert to Permanent (No Expiry)
+            </button>
+          ` : ''}
+          <button onclick="deleteFileToBin(${file.id}); closeModal();" class="w-full py-2.5 bg-rose-700/30 hover:bg-rose-700 text-rose-300 hover:text-white border border-rose-600/40 rounded-xl text-xs font-semibold cursor-pointer">
+            <i class="fa-solid fa-trash mr-1.5"></i> Move to Recycle Bin
+          </button>
+          <button onclick="closeModal()" class="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-semibold cursor-pointer">
+            Close
+          </button>
+        </div>
+      `, 'max-w-md');
+    }
+
+    // Complete extend logic
+    function extendFileExpiry(id, days = 7) {
+      const f = files.find(x => x.id === id);
+      if (f) {
+        f.remainingDays = (f.remainingDays && f.remainingDays > 0 ? f.remainingDays : 0) + days;
+        f.expiry = calculateDate(f.remainingDays);
+        f.expired = false;
+        f.status = 'TEMPORARY';
+        showToast(`"${f.name}" retention extended by +${days} days (Expires: ${f.expiry})`);
+        renderTables();
+      }
+    }
+
+    // Complete convert to permanent logic
+    function convertPermanent(id) {
+      const f = files.find(x => x.id === id);
+      if (f) {
+        f.status = 'PERMANENT';
+        f.remainingDays = null;
+        f.expiry = null;
+        f.expired = false;
+        showToast(`"${f.name}" is now PERMANENT (never auto-deletes)!`);
+        renderTables();
+      }
+    }
+
+    function deleteFileToBin(id) {
+      const idx = files.findIndex(x => x.id === id);
+      if (idx !== -1) {
+        const item = files.splice(idx, 1)[0];
+        binFiles.unshift({
+          id: Date.now(),
+          name: item.name,
+          path: item.path,
+          size: item.size,
+          type: item.type,
+          originalStatus: item.status,
+          deletedAt: new Date().toISOString().split('T')[0],
+          content: item.content,
+          objectUrl: item.objectUrl,
+          blob: item.blob
+        });
+        showToast(`"${item.name}" moved to Recycle Bin`);
+        renderTables();
+      }
+    }
+
+    function restoreBin(id) {
+      const idx = binFiles.findIndex(x => x.id === id);
+      if (idx !== -1) {
+        const item = binFiles.splice(idx, 1)[0];
+        const isTemp = item.originalStatus === 'TEMPORARY';
+        files.unshift({
+          id: Date.now(),
+          name: item.name,
+          path: item.path,
+          size: item.size,
+          type: item.type,
+          category: detectCategory(item.name),
+          status: item.originalStatus,
+          remainingDays: isTemp ? 7 : null,
+          expiry: isTemp ? calculateDate(7) : null,
+          hash: "hash_restored_" + Date.now(),
+          content: item.content,
+          objectUrl: item.objectUrl,
+          blob: item.blob,
+          expired: false
+        });
+        showToast(`"${item.name}" restored as ${item.originalStatus}!`);
+        renderTables();
+      }
+    }
+
+    function emptyBin() {
+      const count = binFiles.length;
+      binFiles = [];
+      showToast(`Recycle Bin emptied (${count} files permanently deleted)`);
+      renderTables();
+    }
+
+    function toggleNotifications(event) {
+      if (event) event.stopPropagation();
+      const popover = document.getElementById('notifications-popover');
+      if (popover) {
+        popover.classList.toggle('hidden');
+      }
+    }
+
+    // Close notifications popover when clicking outside
+    document.addEventListener('click', (e) => {
+      const popover = document.getElementById('notifications-popover');
+      const bellBtn = document.getElementById('btn-header-bell');
+      if (popover && !popover.classList.contains('hidden')) {
+        if (!popover.contains(e.target) && bellBtn && !bellBtn.contains(e.target)) {
+          popover.classList.add('hidden');
+        }
+      }
+    });
+
+    function clearNotifications() {
+      notifications = [];
+      document.getElementById('bell-dot').classList.add('hidden');
+      document.getElementById('bell-dot-ping').classList.add('hidden');
+      renderNotifications();
+      showToast("All notifications marked as read");
+    }
+
+    function renderNotifications() {
+      const container = document.getElementById('notifications-list');
+      if (!container) return;
+      if (notifications.length === 0) {
+        container.innerHTML = `<div class="text-center py-4 text-slate-500 text-xs">No unread notifications</div>`;
+        return;
+      }
+      container.innerHTML = notifications.map(n => `
+        <div class="p-2.5 bg-slate-950 rounded-xl border border-slate-800 flex gap-2.5 items-start">
+          <i class="fa-solid ${n.type === 'EXPIRED' ? 'fa-clock text-amber-400' : 'fa-clone text-purple-400'} mt-0.5"></i>
+          <div class="flex-1">
+            <div class="font-semibold text-slate-200">${n.title}</div>
+            <div class="text-[11px] text-slate-400">${n.text}</div>
+            ${n.fileId ? `
+              <div class="flex gap-2 mt-2">
+                <button onclick="openFile(${n.fileId})" class="px-2 py-0.5 bg-blue-900/40 hover:bg-blue-800 text-blue-300 rounded text-[10px] font-semibold">Open File</button>
+                <button onclick="extendFileExpiry(${n.fileId}, 7)" class="px-2 py-0.5 bg-amber-900/40 hover:bg-amber-800 text-amber-300 rounded text-[10px] font-semibold">+7 Days</button>
+              </div>
+            ` : ''}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function openModal(html, maxWidthClass = 'max-w-lg') {
+      const backdrop = document.getElementById('modal-backdrop');
+      const container = document.getElementById('modal-container');
+      if (container) {
+        container.className = `bg-slate-900 border border-slate-700 rounded-3xl ${maxWidthClass} w-full p-6 shadow-2xl text-slate-100 animate-in fade-in zoom-in duration-200 max-h-[92vh] overflow-y-auto custom-scrollbar`;
+        container.innerHTML = html;
+      }
+      if (backdrop) {
+        backdrop.style.display = 'flex';
+        backdrop.classList.remove('hidden');
+      }
+    }
+
+    function closeModal() {
+      const backdrop = document.getElementById('modal-backdrop');
+      if (backdrop) {
+        backdrop.style.display = 'none';
+        backdrop.classList.add('hidden');
+      }
+    }
+
+    function navigate(tab) {
+      currentTab = tab;
+      const views = ['dashboard', 'files', 'temporary', 'storage', 'duplicates', 'bin', 'code', 'api'];
+      views.forEach(v => {
+        const el = document.getElementById('view-' + v);
+        const nav = document.getElementById('nav-' + v);
+        if (el) el.classList.toggle('hidden', v !== tab);
+        if (nav) {
+          if (v === tab) {
+            nav.className = "w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition bg-blue-600/10 text-blue-400 border border-blue-500/20 cursor-pointer";
+          } else {
+            nav.className = "w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 cursor-pointer";
+          }
+        }
+      });
+
+      if (tab === 'code') showCode('MainActivity.kt');
+      renderTables();
+    }
+
+    function filterCategory(cat) {
+      activeFilter = cat;
+      navigate('files');
+      updateFilterButtons(cat);
+      const label = cat === 'ALL' ? 'Showing all files' : `Filter applied: ${cat}`;
+      showToast(label, 'info');
+    }
+
+    function updateFilterButtons(cat) {
+      const filterKeys = ['ALL', 'Documents', 'Images', 'Videos', 'TEMPORARY', 'PERMANENT'];
+      filterKeys.forEach(k => {
+        const btn = document.getElementById('filter-btn-' + k);
+        if (btn) {
+          if (k.toLowerCase() === cat.toLowerCase()) {
+            btn.className = "px-3.5 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-bold shadow-lg shadow-blue-600/30 ring-2 ring-blue-400 cursor-pointer transition transform scale-105";
+          } else {
+            btn.className = "px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 rounded-lg text-xs font-medium cursor-pointer transition";
+          }
+        }
+      });
+      const indicator = document.getElementById('active-filter-indicator');
+      const text = document.getElementById('active-filter-text');
+      if (indicator && text) {
+        if (cat === 'ALL') {
+          indicator.classList.add('hidden');
+        } else {
+          indicator.classList.remove('hidden');
+          text.innerText = `Active Filter: ${cat} (${files.filter(f => f.status === cat || f.category.toLowerCase() === cat.toLowerCase()).length} files)`;
+        }
+      }
+    }
+
+    function handleSearch(query) {
+      if (!query || query.trim() === '') {
+        activeFilter = 'ALL';
+      } else {
+        const q = query.toLowerCase();
+        const found = files.filter(f => f.name.toLowerCase().includes(q) || f.type.toLowerCase().includes(q) || f.category.toLowerCase().includes(q) || (f.hash && f.hash.toLowerCase().includes(q)));
+        const allTbody = document.getElementById('table-all-files');
+        if (allTbody) {
+          allTbody.innerHTML = found.map(f => `
+            <tr class="hover:bg-slate-900/50 transition">
+              <td class="py-3 px-4 font-semibold text-slate-200">
+                <span onclick="openFile(${f.id})" class="cursor-pointer hover:text-blue-400 flex items-center gap-2.5"><i class="${getFileIcon(f.type)}"></i> ${f.name}</span>
+              </td>
+              <td class="py-3 px-4 font-mono text-slate-400 text-[11px]">${f.path}</td>
+              <td class="py-3 px-4 font-mono">${formatBytes(f.size)}</td>
+              <td class="py-3 px-4">${f.category}</td>
+              <td class="py-3 px-4">${getStatusBadge(f)}</td>
+              <td class="py-3 px-4 font-mono text-slate-400">${f.expiry || '—'}</td>
+              <td class="py-3 px-4 text-right flex items-center justify-end gap-1.5">
+                <button onclick="openFile(${f.id})" class="px-2.5 py-1 bg-blue-600/20 hover:bg-blue-600 text-blue-300 hover:text-white border border-blue-500/40 rounded-lg text-xs font-semibold cursor-pointer">
+                  <i class="fa-solid fa-arrow-up-right-from-square mr-1"></i> Open
+                </button>
+                <button onclick="showFileActions(${f.id})" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 rounded-lg text-xs cursor-pointer">Options</button>
+              </td>
+            </tr>
+          `).join('');
+        }
+        return;
+      }
+      renderTables();
+    }
+
+    function renderTables() {
+      // Calculate dynamic counts
+      const totalBytes = files.reduce((acc, f) => acc + f.size, 0);
+      const tempFiles = files.filter(f => f.status === 'TEMPORARY');
+      const tempBytes = tempFiles.reduce((acc, f) => acc + f.size, 0);
+      const expiredFiles = tempFiles.filter(f => f.expired || f.remainingDays <= 0);
+      const expiringSoonFiles = tempFiles.filter(f => !f.expired && f.remainingDays > 0 && f.remainingDays <= 3);
+      const binBytes = binFiles.reduce((acc, b) => acc + b.size, 0);
+
+      // Duplicates calculation
+      const hashGroups = {};
+      files.forEach(f => {
+        if (f.hash) {
+          hashGroups[f.hash] = hashGroups[f.hash] || [];
+          hashGroups[f.hash].push(f);
+        }
+      });
+      const dupKeys = Object.keys(hashGroups).filter(k => hashGroups[k].length > 1);
+      let duplicateWastedBytes = 0;
+      dupKeys.forEach(k => {
+        duplicateWastedBytes += (hashGroups[k].length - 1) * hashGroups[k][0].size;
+      });
+
+      // Update Dynamic Top Header Buttons
+      const btnHeaderExpired = document.getElementById('btn-header-expired');
+      const textHeaderExpired = document.getElementById('header-expired-text');
+      if (btnHeaderExpired && textHeaderExpired) {
+        if (expiredFiles.length > 0) {
+          btnHeaderExpired.className = "px-3 py-1.5 bg-amber-950/70 hover:bg-amber-900/80 active:scale-95 text-amber-300 border border-amber-700/60 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer flex-shrink-0";
+          textHeaderExpired.innerText = `${expiredFiles.length} File${expiredFiles.length > 1 ? 's' : ''} Expired`;
+        } else {
+          btnHeaderExpired.className = "px-3 py-1.5 bg-emerald-950/40 hover:bg-emerald-900/40 active:scale-95 text-emerald-300 border border-emerald-800/40 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer flex-shrink-0";
+          textHeaderExpired.innerText = `0 Expired (Active)`;
+        }
+      }
+
+      const textHeaderDup = document.getElementById('header-dup-text');
+      if (textHeaderDup) {
+        if (dupKeys.length > 0) {
+          textHeaderDup.innerText = `${dupKeys.length} Duplicate Group${dupKeys.length > 1 ? 's' : ''}`;
+        } else {
+          textHeaderDup.innerText = `0 Duplicates`;
+        }
+      }
+
+      // Sidebar & Badges
+      document.getElementById('badge-all-files').innerText = files.length;
+      document.getElementById('badge-temp-files').innerText = tempFiles.length;
+      document.getElementById('badge-dup-files').innerText = dupKeys.length;
+      document.getElementById('badge-bin-files').innerText = binFiles.length;
+
+      // Stats
+      document.getElementById('stat-total-files').innerText = files.length;
+      document.getElementById('stat-temp-files').innerText = tempFiles.length;
+      document.getElementById('stat-expired-files').innerText = expiredFiles.length;
+      document.getElementById('stat-dup-space').innerText = formatBytes(duplicateWastedBytes);
+
+      // Temporary Summary Section
+      if (document.getElementById('temp-summary-size')) {
+        document.getElementById('temp-summary-size').innerText = formatBytes(tempBytes);
+        document.getElementById('temp-summary-count').innerText = `${tempFiles.length} active lifecycle files`;
+        document.getElementById('temp-summary-soon').innerText = `${expiringSoonFiles.length} Files`;
+        document.getElementById('temp-summary-expired').innerText = `${expiredFiles.length} Files`;
+      }
+
+      // Sidebar Capacity meter
+      const maxStorage = 128 * 1024 * 1024 * 1024; // 128 GB
+      const usedStorage = 96 * 1024 * 1024 * 1024 + totalBytes;
+      const freeStorage = maxStorage - usedStorage;
+      const usedPercent = Math.min(100, Math.round((usedStorage / maxStorage) * 100));
+
+      document.getElementById('sidebar-storage-text').innerText = `${(usedStorage / (1024**3)).toFixed(1)} GB / 128.0 GB`;
+      document.getElementById('sidebar-storage-percent').innerText = `${usedPercent}% used`;
+      document.getElementById('sidebar-storage-free').innerText = `${(freeStorage / (1024**3)).toFixed(1)} GB free`;
+      document.getElementById('sidebar-storage-bar').style.width = `${usedPercent}%`;
+
+      if (document.getElementById('meter-used')) {
+        document.getElementById('meter-used').innerHTML = `${(usedStorage / (1024**3)).toFixed(1)} GB <span class="text-sm font-normal text-slate-400">/ 128.0 GB</span>`;
+        document.getElementById('meter-percent').innerText = `${usedPercent}% capacity utilized`;
+        document.getElementById('meter-free').innerText = `${(freeStorage / (1024**3)).toFixed(1)} GB`;
+        document.getElementById('meter-dup').innerText = formatBytes(duplicateWastedBytes);
+        document.getElementById('meter-bin').innerText = formatBytes(binBytes);
+      }
+
+      // Categories
+      const categories = ['Documents', 'Images', 'Videos', 'Audio', 'Archives', 'Applications', 'Other'];
+      const catContainer = document.getElementById('categories-container');
+      if (catContainer) {
+        catContainer.innerHTML = categories.map(cat => {
+          const catFiles = files.filter(f => f.category.toLowerCase() === cat.toLowerCase());
+          const catSize = catFiles.reduce((acc, f) => acc + f.size, 0);
+          const isSelected = (activeFilter.toLowerCase() === cat.toLowerCase());
+          const borderCls = isSelected ? 'border-blue-500 bg-blue-950/40 ring-2 ring-blue-500/50 shadow-lg shadow-blue-500/20' : 'border-slate-800 bg-slate-900 hover:bg-slate-800/80 hover:border-slate-700';
+          return `
+            <div onclick="filterCategory('${cat}')" class="cursor-pointer ${borderCls} border p-3.5 rounded-xl transition text-center active:scale-95">
+              <i class="${getCategoryIcon(cat)} text-xl mb-1.5 ${isSelected ? 'text-blue-400' : 'text-slate-300'}"></i>
+              <div class="font-bold text-xs ${isSelected ? 'text-blue-300 font-extrabold' : 'text-white'}">${cat}</div>
+              <div class="text-[10px] text-slate-400">${catFiles.length} files • ${formatBytes(catSize)}</div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      // Sync active filter button chips styling
+      updateFilterButtons(activeFilter);
+
+      // Duplicates list
+      const dupContainer = document.getElementById('duplicate-groups-container');
+      if (dupContainer) {
+        document.getElementById('dup-badge-total').innerText = `${formatBytes(duplicateWastedBytes)} Recoverable`;
+
+        if (dupKeys.length === 0) {
+          dupContainer.innerHTML = `<div class="bg-slate-900 p-8 rounded-2xl border border-slate-800 text-center text-slate-400 text-xs">No duplicate files found in storage. All SHA-256 hashes are unique.</div>`;
+        } else {
+          dupContainer.innerHTML = dupKeys.map(hash => {
+            const group = hashGroups[hash];
+            const wasted = (group.length - 1) * group[0].size;
+            return `
+              <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl space-y-4">
+                <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                  <div>
+                    <div class="font-mono text-xs text-purple-400 font-semibold">SHA-256: ${hash.substring(0, 32)}...</div>
+                    <div class="text-[11px] text-slate-400 mt-0.5">${group.length} files sharing exact signature (${formatBytes(wasted)} wasted)</div>
+                  </div>
+                  <button onclick="deleteFileToBin(${group[1].id})" class="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-xl text-xs font-semibold cursor-pointer">
+                    Delete Duplicate Copy
+                  </button>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                  ${group.map(f => `
+                    <div class="p-4 bg-slate-950 rounded-xl border border-slate-800 flex items-center justify-between">
+                      <div class="flex items-center gap-3 cursor-pointer" onclick="openFile(${f.id})">
+                        <i class="${getFileIcon(f.type)} text-xl"></i>
+                        <div>
+                          <div class="font-semibold text-white hover:text-blue-400">${f.name}</div>
+                          <div class="text-[11px] text-slate-400">${f.path}</div>
+                          <div class="text-[10px] text-slate-500 mt-1">${formatBytes(f.size)} • ${f.status}</div>
+                        </div>
+                      </div>
+                      <button onclick="openFile(${f.id})" class="px-3 py-1.5 bg-blue-600/20 hover:bg-blue-600 text-blue-300 hover:text-white rounded-lg text-xs font-semibold transition cursor-pointer">
+                        Open
+                      </button>
+                    </div>
+                  `).join('')}
+                </div>
+              </div>
+            `;
+          }).join('');
+        }
+      }
+
+      // Storage breakdown chart bar
+      const chartBar = document.getElementById('storage-chart-bar');
+      if (chartBar) {
+        chartBar.innerHTML = `
+          <div class="bg-purple-500 h-full w-[45%]" title="Videos"></div>
+          <div class="bg-emerald-500 h-full w-[20%]" title="Images"></div>
+          <div class="bg-blue-500 h-full w-[15%]" title="Documents"></div>
+          <div class="bg-amber-500 h-full w-[10%]" title="Temporary"></div>
+          <div class="bg-slate-600 h-full w-[10%]" title="Other"></div>
+        `;
+      }
+
+      // Filtered files
+      let displayFiles = files;
+      if (activeFilter !== 'ALL') {
+        if (activeFilter === 'TEMPORARY' || activeFilter === 'PERMANENT') {
+          displayFiles = files.filter(f => f.status === activeFilter);
+        } else {
+          displayFiles = files.filter(f => f.category.toLowerCase() === activeFilter.toLowerCase());
+        }
+      }
+
+      // Recent Files Table
+      const recentTbody = document.getElementById('table-recent-files');
+      if (recentTbody) {
+        recentTbody.innerHTML = files.slice(0, 5).map(f => `
+          <tr class="hover:bg-slate-900/50 transition">
+            <td class="py-3 px-4 font-semibold text-slate-200">
+              <span onclick="openFile(${f.id})" class="cursor-pointer hover:text-blue-400 flex items-center gap-2.5"><i class="${getFileIcon(f.type)}"></i> ${f.name}</span>
+            </td>
+            <td class="py-3 px-4">${f.category}</td>
+            <td class="py-3 px-4 font-mono">${formatBytes(f.size)}</td>
+            <td class="py-3 px-4">${getStatusBadge(f)}</td>
+            <td class="py-3 px-4 font-mono text-slate-400">${f.status === 'TEMPORARY' ? (f.remainingDays > 0 ? f.remainingDays + ' days left' : '<span class="text-rose-400 font-bold">Expired</span>') : 'Permanent'}</td>
+            <td class="py-3 px-4 text-right flex items-center justify-end gap-1.5">
+              <button onclick="openFile(${f.id})" class="px-2.5 py-1 bg-blue-600/20 hover:bg-blue-600 text-blue-300 hover:text-white border border-blue-500/40 rounded-lg text-xs font-semibold transition cursor-pointer">
+                <i class="fa-solid fa-arrow-up-right-from-square mr-1"></i> Open
+              </button>
+              <button onclick="showFileActions(${f.id})" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs cursor-pointer">
+                Options
+              </button>
+            </td>
+          </tr>
+        `).join('');
+      }
+
+      // All Files Table
+      const allTbody = document.getElementById('table-all-files');
+      if (allTbody) {
+        if (displayFiles.length === 0) {
+          allTbody.innerHTML = `
+            <tr>
+              <td colspan="7" class="py-10 text-center text-slate-400 text-xs">
+                <i class="fa-solid fa-folder-open text-2xl text-slate-500 mb-2 block"></i>
+                No files registered in category <strong class="text-blue-300">"${activeFilter}"</strong>.<br>
+                <button onclick="filterCategory('ALL')" class="mt-2.5 px-3 py-1 bg-blue-600/30 hover:bg-blue-600 text-blue-300 hover:text-white border border-blue-500/40 rounded-lg text-xs font-semibold cursor-pointer">
+                  Clear Filter (Show All 7 Files)
+                </button>
+              </td>
+            </tr>
+          `;
+        } else {
+          allTbody.innerHTML = displayFiles.map(f => `
+          <tr class="hover:bg-slate-900/50 transition">
+            <td class="py-3 px-4 font-semibold text-slate-200">
+              <span onclick="openFile(${f.id})" class="cursor-pointer hover:text-blue-400 flex items-center gap-2.5"><i class="${getFileIcon(f.type)}"></i> ${f.name}</span>
+            </td>
+            <td class="py-3 px-4 font-mono text-slate-400 text-[11px]">${f.path}</td>
+            <td class="py-3 px-4 font-mono">${formatBytes(f.size)}</td>
+            <td class="py-3 px-4">${f.category}</td>
+            <td class="py-3 px-4">${getStatusBadge(f)}</td>
+            <td class="py-3 px-4 font-mono text-slate-400">${f.expiry || '—'}</td>
+            <td class="py-3 px-4 text-right flex items-center justify-end gap-1.5">
+              <button onclick="openFile(${f.id})" class="px-2.5 py-1 bg-blue-600/20 hover:bg-blue-600 text-blue-300 hover:text-white border border-blue-500/40 rounded-lg text-xs font-semibold transition cursor-pointer">
+                <i class="fa-solid fa-arrow-up-right-from-square mr-1"></i> Open
+              </button>
+              <button onclick="showFileActions(${f.id})" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs cursor-pointer">
+                Manage
+              </button>
+            </td>
+          </tr>
+        `).join('');
+        }
+      }
+
+      // Temporary Files Table
+      const tempTbody = document.getElementById('table-temp-files');
+      if (tempTbody) {
+        tempTbody.innerHTML = tempFiles.map(f => `
+          <tr class="hover:bg-slate-900/50 transition">
+            <td class="py-3 px-4 font-semibold text-slate-200">
+              <span onclick="openFile(${f.id})" class="cursor-pointer hover:text-blue-400 flex items-center gap-2.5"><i class="${getFileIcon(f.type)}"></i> ${f.name}</span>
+            </td>
+            <td class="py-3 px-4 font-mono">${formatBytes(f.size)}</td>
+            <td class="py-3 px-4 font-mono text-slate-300">${f.expiry}</td>
+            <td class="py-3 px-4">${getStatusBadge(f)}</td>
+            <td class="py-3 px-4">
+              <div class="flex items-center gap-2">
+                <button onclick="extendFileExpiry(${f.id}, 7)" class="px-2.5 py-1 bg-blue-600/20 hover:bg-blue-600 text-blue-300 hover:text-white border border-blue-500/40 rounded-lg text-xs font-semibold cursor-pointer">
+                  +7 Days
+                </button>
+                <button onclick="convertPermanent(${f.id})" class="px-2.5 py-1 bg-emerald-600/20 hover:bg-emerald-600 text-emerald-300 hover:text-white border border-emerald-500/40 rounded-lg text-xs font-semibold cursor-pointer">
+                  Make Permanent
+                </button>
+              </div>
+            </td>
+            <td class="py-3 px-4 text-right flex items-center justify-end gap-1.5">
+              <button onclick="openFile(${f.id})" class="px-2.5 py-1 bg-blue-600/20 hover:bg-blue-600 text-blue-300 hover:text-white border border-blue-500/40 rounded-lg text-xs font-semibold transition cursor-pointer">
+                Open
+              </button>
+              <button onclick="deleteFileToBin(${f.id})" class="text-rose-400 hover:text-rose-300 p-1 cursor-pointer">
+                <i class="fa-solid fa-trash"></i>
+              </button>
+            </td>
+          </tr>
+        `).join('');
+      }
+
+      // Bin Files Table
+      const binTbody = document.getElementById('table-bin-files');
+      if (binTbody) {
+        binTbody.innerHTML = binFiles.map(b => `
+          <tr class="hover:bg-slate-900/50 transition">
+            <td class="py-3 px-4 font-semibold text-slate-200">
+              <span onclick="openFile(${b.id})" class="cursor-pointer hover:text-blue-400 flex items-center gap-2.5"><i class="${getFileIcon(b.type)}"></i> ${b.name}</span>
+            </td>
+            <td class="py-3 px-4 font-mono text-slate-400">${b.path}</td>
+            <td class="py-3 px-4 font-semibold text-slate-300">${b.originalStatus}</td>
+            <td class="py-3 px-4 text-slate-400">${b.deletedAt}</td>
+            <td class="py-3 px-4 font-mono">${formatBytes(b.size)}</td>
+            <td class="py-3 px-4 text-right flex items-center justify-end gap-1.5">
+              <button onclick="openFile(${b.id})" class="px-2.5 py-1 bg-blue-600/20 hover:bg-blue-600 text-blue-300 hover:text-white border border-blue-500/40 rounded-lg text-xs font-semibold cursor-pointer">
+                View
+              </button>
+              <button onclick="restoreBin(${b.id})" class="px-3 py-1 bg-emerald-700 hover:bg-emerald-600 text-white rounded-lg text-xs font-semibold cursor-pointer">
+                Restore
+              </button>
+            </td>
+          </tr>
+        `).join('');
+      }
+
+      renderNotifications();
+    }
+
+    function getStatusBadge(f) {
+      if (f.status === 'PERMANENT') {
+        return '<span class="px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-300 text-[10px] font-bold">PERMANENT</span>';
+      }
+      if (f.expired || f.remainingDays === 0) {
+        return '<span class="px-2.5 py-0.5 rounded-full bg-rose-950 text-rose-300 border border-rose-800/60 text-[10px] font-bold">EXPIRED</span>';
+      }
+      if (f.remainingDays <= 3) {
+        return `<span class="px-2.5 py-0.5 rounded-full bg-amber-950 text-amber-300 border border-amber-800/60 text-[10px] font-bold">${f.remainingDays}D EXPIRING</span>`;
+      }
+      return `<span class="px-2.5 py-0.5 rounded-full bg-blue-950 text-blue-300 border border-blue-800/60 text-[10px] font-bold">${f.remainingDays}D ACTIVE</span>`;
+    }
+
+    function getFileIcon(type) {
+      if (type === 'PDF' || type === 'DOCX' || type === 'DOC') return 'fa-solid fa-file-pdf text-rose-400';
+      if (type === 'MP4' || type === 'MKV' || type === 'AVI') return 'fa-solid fa-file-video text-blue-400';
+      if (type === 'JPG' || type === 'JPEG' || type === 'PNG' || type === 'GIF') return 'fa-solid fa-file-image text-emerald-400';
+      if (type === 'TXT' || type === 'MD' || type === 'JSON' || type === 'PY') return 'fa-solid fa-file-code text-indigo-400';
+      return 'fa-solid fa-file text-slate-400';
+    }
+
+    function getCategoryIcon(cat) {
+      if (cat === 'Documents') return 'fa-solid fa-file-lines text-blue-400';
+      if (cat === 'Images') return 'fa-solid fa-image text-emerald-400';
+      if (cat === 'Videos') return 'fa-solid fa-film text-purple-400';
+      if (cat === 'Audio') return 'fa-solid fa-music text-amber-400';
+      if (cat === 'Archives') return 'fa-solid fa-file-zipper text-orange-400';
+      if (cat === 'Applications') return 'fa-solid fa-mobile-screen-button text-teal-400';
+      return 'fa-solid fa-box text-slate-400';
+    }
+
+    const codeSamples = {
+      'MainActivity.kt': `package com.smartstoragebin
+
+import android.os.Bundle
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.Scaffold
+import androidx.compose.runtime.getValue
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.compose.rememberNavController
+import com.smartstoragebin.notification.NotificationHelper
+import com.smartstoragebin.ui.navigation.BottomNavBar
+import com.smartstoragebin.ui.navigation.NavGraph
+import com.smartstoragebin.ui.navigation.Screen
+import com.smartstoragebin.ui.theme.SmartStorageBinTheme
+
+class MainActivity : ComponentActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
+        NotificationHelper.createNotificationChannel(this)
+        setContent {
+            SmartStorageBinTheme {
+                val navController = rememberNavController()
+                val navBackStackEntry by navController.currentBackStackEntryAsState()
+                val currentRoute = navBackStackEntry?.destination?.route
+
+                val mainRoutes = listOf(
+                    Screen.Home.route, Screen.Files.route, Screen.Temporary.route,
+                    Screen.Storage.route, Screen.Bin.route
+                )
+                val showBottomBar = mainRoutes.any { currentRoute?.startsWith(it) == true }
+
+                Scaffold(
+                    modifier = Modifier.fillMaxSize(),
+                    bottomBar = { if (showBottomBar) BottomNavBar(navController = navController) }
+                ) { innerPadding ->
+                    Box(modifier = Modifier.padding(innerPadding)) {
+                        NavGraph(navController = navController)
+                    }
+                }
+            }
+        }
+    }
+}`,
+      'FileController.java': `package com.smartstoragebin.backend.controller;
+
+import com.smartstoragebin.backend.dto.*;
+import com.smartstoragebin.backend.service.FileService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.*;
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/files")
+@RequiredArgsConstructor
+@Tag(name = "Files", description = "File metadata, lifecycle, and operations management")
+public class FileController {
+
+    private final FileService fileService;
+
+    @GetMapping
+    @Operation(summary = "List all active files")
+    public List<FileDTO> getAllFiles() {
+        return fileService.getAllFiles();
+    }
+
+    @PostMapping
+    @Operation(summary = "Register new file with SHA-256 hash")
+    public FileDTO createFile(@RequestBody CreateFileRequest request) {
+        return fileService.createFile(request);
+    }
+
+    @PutMapping("/{id}/convert-permanent")
+    @Operation(summary = "Convert temporary file to permanent")
+    public FileDTO convertToPermanent(@PathVariable Long id) {
+        return fileService.convertToPermanent(id);
+    }
+
+    @PutMapping("/{id}/extend")
+    @Operation(summary = "Extend temporary file retention")
+    public FileDTO extendExpiry(@PathVariable Long id, @RequestBody ExtendExpiryRequest request) {
+        return fileService.extendExpiry(id, request);
+    }
+}`
+    };
+
+    function showCode(filename) {
+      document.getElementById('code-filename').innerText = filename;
+      document.getElementById('code-content').innerText = codeSamples[filename] || `// Full source code available in your local directories:\n// Frontend: C:\\Users\\Pavan Kumar\\.gemini\\antigravity\\scratch\\SmartStorageBin\\\n// Backend: C:\\Users\\Pavan Kumar\\.gemini\\antigravity\\scratch\\SmartStorageBinBackend\\`;
+    }
+
+    function callMockApi(endpoint) {
+      const output = document.getElementById('api-output');
+      output.innerText = "Executing request: " + endpoint + "...";
+      setTimeout(() => {
+        if (endpoint.includes('/api/storage')) {
+          output.innerText = JSON.stringify({
+            totalStorage: 128000000000,
+            usedStorage: 96000000000,
+            freeStorage: 32000000000,
+            temporaryStorage: 6800000000,
+            duplicateStorage: 4000000000,
+            binStorage: 1200000000
+          }, null, 2);
+        } else if (endpoint.includes('/api/duplicates')) {
+          output.innerText = JSON.stringify([
+            {
+              hash: "7f83b1657ff1fc53b92dc18148a1d65dfc2d4b1fa3d677284addd200126d9069",
+              files: [
+                { id: 2, name: "OS Lecture.mp4", size: 150000000 },
+                { id: 7, name: "Duplicate Video.mp4", size: 150000000 }
+              ],
+              totalWastedSpace: 150000000
+            }
+          ], null, 2);
+        } else {
+          output.innerText = JSON.stringify(files, null, 2);
+        }
+      }, 200);
+    }
+
+    // Initialize
+    renderTables();
+
+    // Auto-check for expiry every 30 seconds
+    setInterval(() => {
+      const newlyExpired = files.filter(f => f.status === 'TEMPORARY' && !f.expired && f.remainingDays <= 0);
+      newlyExpired.forEach(f => {
+        f.expired = true;
+        triggerFileExpiredAlert(f);
+      });
+    }, 30000);
+  </script>
+</body>
+</html>
